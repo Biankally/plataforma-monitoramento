@@ -1,0 +1,21 @@
+# Senhas e configurações sensíveis
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Banco de métricas local
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
