@@ -86,3 +86,27 @@ Modelo de entrada:
 - **Arquivos:** `docs/LOG.md`, `AGENTS.md`.
 - **Verificação:** arquivo presente no commit.
 - **Pendências / riscos:** nenhuma.
+
+## 2026-11-20 14:30 — Divisão das partes e infraestrutura em WSL2 + Docker
+- **Quem:** Bia (P1)
+- **O que mudou:**
+  1. Divisão: Bia fica com **P1 (Infra e Segurança)**; a sugestão de um integrante foi incorporada à **P2** (pedido em `docs/ia/pedido-p2.md`).
+  2. Infraestrutura pelo **caminho B**: WSL2 (VM Linux leve) com **Docker Desktop**; a plataforma roda no WSL e os 4 serviços em containers. VirtualBox descartado (disputa de virtualização com o WSL2 e 2–3 h só de instalação).
+  3. **Portas alternativas** publicadas só em 127.0.0.1: web 8080, db 3307, dns 1053, smtp 2525 (evita conflito com XAMPP nas portas 80/3306 e com o Windows nas 53/25).
+- **Por quê:** prazo curto; a professora liberou containers desde que um ataque não derrube outros serviços (garantido pelos limites de CPU, memória e processos de cada container).
+- **Arquivos:** `config/servicos.toml`.
+- **Verificação:** ver entrada seguinte.
+- **Pendências / riscos:** plataforma e serviços na mesma VM (o isolamento vem dos limites dos containers); registrar como decisão na arquitetura.
+
+## 2026-11-20 14:30 — Infraestrutura mínima (4 containers com limites)
+- **Quem:** Bia (P1)
+- **O que mudou:** `docker-compose.yml` com `web` (php:8.3-apache, página provisória), `db` (mysql:8.0), `dns` (Unbound sobre Alpine, zona `lab.local`) e `smtp` (Postfix sobre Alpine), cada um com `cpus`, `mem_limit` e `pids_limit`; teste da infraestrutura real; remoção do `.gitkeep` que sobrou em `plataforma/api/`.
+- **Por quê:** colocar serviços reais no ar hoje, para P2 testar as sondas, antes de adaptar o site e montar o agente.
+- **Arquivos:** `servicos/docker-compose.yml`, `servicos/.env.exemplo`, `servicos/web-vuln/site/index.php`, `servicos/dns/Dockerfile`, `servicos/dns/unbound.conf`, `servicos/smtp/Dockerfile`, `servicos/smtp/main.cf`, `tests/test_infra.py`, `config/servicos.toml`.
+- **Verificação (antes de subir no WSL):**
+  - `docker compose config` → válido; limites lidos (web 1 CPU/512 MB/200 proc., db 1 CPU/1 GB/300, dns e smtp 0,5 CPU/256 MB/100).
+  - `unbound-checkconf` → sem erros; Unbound rodando com o arquivo: `teste.lab.local` → 192.0.2.10, nome inexistente → NXDOMAIN, `unbound-control stats_noreset` mostra `total.num.queries` e `num.answer.rcode.NXDOMAIN`.
+  - Postfix rodando com o `main.cf`: EHLO 250, envio aceito, log com `status=sent` e `delay=`.
+  - `pytest` → 30 passed, 8 skipped (os testes de infraestrutura só rodam com `MONITOR_INFRA=1`).
+- **Verificação no WSL da Bia (20/11 14:40):** 4 containers Up; `MONITOR_INFRA=1 pytest tests/test_infra.py` → 8 passed; sabotagem `docker compose stop db` → 1 failed (só o db), 7 passed; `docker compose start db` restaurou. Limitação: a sonda TCP aceita a conexão pelo encaminhamento de porta do Docker Desktop antes de o MySQL ficar pronto; as sondas reais da P2 (`SELECT 1`, consulta DNS, diálogo SMTP) resolvem.
+- **Pendências / riscos:** imagens não foram baixadas no ambiente de validação (sem acesso ao Docker Hub); a subida real é conferida no WSL.
