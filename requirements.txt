@@ -1,0 +1,6 @@
+flask>=3.0
+requests>=2.31
+streamlit>=1.40
+pymysql>=1.1
+dnspython>=2.6
+pytest>=8.0

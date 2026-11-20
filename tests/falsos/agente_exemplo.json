@@ -1,0 +1,11 @@
+{
+  "ts": 1795036800,
+  "apache": {"total_accesses": 15230, "conns_total": 4, "busy_workers": 2},
+  "log_web": {"total": 61, "por_codigo": {"200": 55, "404": 4, "500": 2}, "tempo_servidor_us": [1830, 2210, 950]},
+  "unbound": {"total.num.queries": 8421, "num.answer.rcode.SERVFAIL": 3, "num.answer.rcode.REFUSED": 0, "num.answer.rcode.NXDOMAIN": 5},
+  "postfix": {"fila": 0, "sent": 12, "deferred": 1, "bounced": 0, "rejeicoes": 0, "timeouts": 0, "delay_medio_s": 0.8},
+  "auth": [{"ts": 1795036790, "origem": "192.168.56.1", "usuario": "admin@teste.com", "sucesso": false}],
+  "containers": {"web": {"cpu_pct": 12.5, "mem_pct": 48.1}, "db": {"cpu_pct": 3.0, "mem_pct": 30.2}},
+  "host": {"cpu_pct": 12.5, "mem_pct": 48.1, "disco_pct": 37.0, "disco_io_kbs": 120.0, "disco_latencia_ms": 2.1},
+  "hashes": {"/etc/postfix/main.cf": "9f2c0000000000000000000000000000000000000000000000000000000000aa"}
+}

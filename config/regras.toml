@@ -1,0 +1,36 @@
+# Limites iniciais de projeto (recalibrar com a linha de base medida nos testes).
+# operador ">" = alerta acima do limite; "<" = alerta abaixo.
+
+["web.disponivel"]
+operador = "<"
+atencao = 1
+critico = 1
+atencao_imediata = true
+
+["db.disponivel"]
+operador = "<"
+atencao = 1
+critico = 1
+atencao_imediata = true
+
+["dns.disponivel"]
+operador = "<"
+atencao = 1
+critico = 1
+atencao_imediata = true
+
+["smtp.disponivel"]
+operador = "<"
+atencao = 1
+critico = 1
+atencao_imediata = true
+
+["web.latencia_ms"]
+operador = ">"
+atencao = 500
+critico = 2000
+
+["dns.latencia_ms"]
+operador = ">"
+atencao = 100
+critico = 500

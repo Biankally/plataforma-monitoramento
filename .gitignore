@@ -1,4 +1,4 @@
-# Senhas e configurações sensíveis
+# Segredos
 .env
 *.pem
 *.key
@@ -6,16 +6,22 @@
 # Python
 __pycache__/
 *.pyc
-venv/
 .venv/
+venv/
+.pytest_cache/
 
-# Banco de métricas local
+# Dados e saidas locais
+dados/
+notificacoes/
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
-
-# Logs
 *.log
+*.xlsx
+*.csv
 
-# Arquivos do sistema
+# Sistema
 .DS_Store
 Thumbs.db
+CLAUDE.md
