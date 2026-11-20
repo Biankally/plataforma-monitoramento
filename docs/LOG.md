@@ -140,3 +140,28 @@ Modelo de entrada:
   - Vulnerabilidades mantidas de propósito (alvo do laboratório): mensagens diferentes para "e-mail não encontrado" e "senha incorreta" (enumeração de usuários), login sem limite de tentativas, nome do usuário impresso sem escape em `suaconta.php` (XSS), `display_errors` ligado em `resetpassword.php`.
   - Código morto do site original mantido como estava: `processa_cadastro.php` e `login/update_password.php` usam colunas que não existem.
 - **Verificação final no WSL (20/11 15:17):** `pytest` → 43 passed, 12 skipped; `MONITOR_INFRA=1 pytest tests/test_infra.py` → 12 passed.
+
+## 2026-11-20 19:00 — Sondas reais de MySQL, DNS e SMTP (P2, tarefa 1)
+- **Quem:** Luiz (P2)
+- **O que mudou:** `sonda_mysql` (PyMySQL: conecta, `SELECT 1`, `SHOW GLOBAL STATUS`, `max_connections`, tamanho dos bancos), `sonda_dns` (dnspython: consulta A direta no servidor; NXDOMAIN, SERVFAIL, REFUSED, resposta vazia e timeout contam como fora do ar) e `sonda_smtp` (smtplib: banner 220, EHLO 250, QUIT). Todas devolvem `disponivel` e `latencia_ms`; a do MySQL devolve também `status.<Contador>` brutos, `max_connections` e `tamanho_mb` (o Coletor/`derivadas` transforma em `db.*`).
+- **Por quê:** a sonda TCP dava "no ar" só porque o Docker aceita a conexão antes do serviço estar pronto.
+- **Arquivos:** `plataforma/infra/sondas.py`, `tests/test_sondas.py`, `tests/falsos/dns_smtp_falsos.py`.
+- **Verificação:** `pytest tests/test_sondas.py` → 23 passed (teste escrito antes: 17 failed). Sabotagens acusadas: porta aberta que não é MySQL/SMTP; servidor fora do ar; SELECT 1 falhando; banner 421/554; EHLO 550; DNS com SERVFAIL/REFUSED/NXDOMAIN; DNS mudo. Mutações no código (EHLO ignorado, exceção DNS não tratada, MB sem dividir, MySQLError não tratado, porta errada) → todas acusadas.
+- **Pendências / riscos:** o MySQL foi testado com conexão falsa (não há MySQL real no ambiente de validação); conferir no WSL com `MONITOR_INFRA=1`. `servicos.toml` (novos `tipo`) muda junto com a tarefa 4, porque o Coletor ainda não conhece os tipos novos.
+
+## 2026-11-20 19:00 — Cliente do agente (P2, tarefa 2)
+- **Quem:** Luiz (P2)
+- **O que mudou:** `ler_metricas(url_base, token, timeout_s)` faz `GET {url_base}/metrics` com `X-Token` e devolve o dicionário; falhas sobem como `ErroAgente` (sem rede, HTTP diferente de 200, token errado, corpo que não é objeto JSON).
+- **Por quê:** o Coletor precisa saber que o agente falhou e omitir as métricas, em vez de receber um dicionário vazio.
+- **Arquivos:** `plataforma/infra/agente_cliente.py`, `tests/test_agente_cliente.py`.
+- **Verificação:** `pytest tests/test_agente_cliente.py` → 8 passed, com servidor falso servindo `tests/falsos/agente_exemplo.json`. Mutações (sem checar status, sem enviar token, sem checar objeto) → acusadas.
+- **Pendências / riscos:** URL e token do agente vêm de `config`/`.env` na tarefa 4 (nomes a combinar com P1).
+
+## 2026-11-20 19:00 — Derivadas do agente para o catálogo (P2, tarefa 3)
+- **Quem:** Luiz (P2)
+- **O que mudou:** `derivar(atual, anterior, falhas_sonda_dns=0)` converte o JSON do agente em amostras `web.*`, `dns.*`, `smtp.*`, `host.*`. Métrica que não dá para calcular (seção ausente, sem leitura anterior, contador que diminuiu, divisão por zero) é omitida.
+- **Por quê:** o agente entrega contadores e contagens; o catálogo pede taxas e percentuais.
+- **Arquivos:** `plataforma/dominio/derivadas.py`, `tests/test_derivadas.py`.
+- **Verificação:** `pytest tests/test_derivadas.py` → 13 passed (teste escrito antes: erro de import); valores calculados à mão no cabeçalho do teste. Mutações (p95, divisão por zero, unidade de e-mails/min, faixa 5xx, falha da sonda DNS) → acusadas. `pytest` inteiro (cópia do repositório com os arquivos recebidos) → 44 passed, 5 de 5 vezes.
+- **Pendências / riscos:** premissas: `log_web` e `postfix` são contagens da janela (não acumulam); `apache` e `unbound` são acumulados; `smtp.taxa_erro_pct` usa como total sent+deferred+bounced+rejeicoes+timeouts; p95 pelo posto mais próximo. Confirmar com P1 (agente).
+
