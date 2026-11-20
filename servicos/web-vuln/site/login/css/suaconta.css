@@ -1,0 +1,130 @@
+body {
+    background-color: #f9f9f9;
+}
+
+.logo img {
+    height: 50px; /* Ajuste a altura conforme necessário */
+    width: auto;
+    border-radius: 500px; /* Torna a imagem circular */
+}
+
+/* Estilo para o rodapé */
+footer {
+    background-color: #343a40; /* Cor de fundo escura */
+}
+
+footer a {
+    color: #ffffff; /* Cor dos links */
+}
+
+footer a:hover {
+    color: #dc3545; /* Cor dos links ao passar o mouse */
+}
+
+/* Estilo para os ícones das redes sociais */
+.btn-floating {
+    display: inline-block;
+    width: 40px; /* Ajuste o tamanho conforme necessário */
+    height: 40px; /* Ajuste o tamanho conforme necessário */
+    line-height: 40px; /* Centraliza verticalmente o texto dentro do botão */
+    border-radius: 50%;
+    text-align: center;
+    background-color: #6c757d; /* Cor de fundo dos ícones */
+    margin: 0 5px; /* Espaçamento entre os ícones */
+}
+
+.btn-floating i {
+    font-size: 23px; /* Tamanho dos ícones */
+}
+
+.btn-floating:hover {
+    background-color: #dc3545; /* Cor de fundo ao passar o mouse */
+}
+
+/* Centraliza o texto "Receitas Práticas" no rodapé */
+.footer-receitas-praticas {
+    text-align: center;
+}
+
+/* Posiciona o ícone de login no canto superior direito */
+.navbar-nav.login-icon-right {
+    margin-left: auto; /* Empurra o item para a direita */
+}
+
+/* Garante que em telas maiores o ícone permaneça à direita */
+@media (min-width: 992px) { /* lg breakpoint do Bootstrap */
+    #navbarSupportedContent .navbar-nav.login-icon-right {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+/* --- Cores Personalizadas para os Botões da Sua Conta --- */
+
+/* Botão "Salvar Alterações" (Classe .btn-primary) */
+.btn-primary {
+    background-color: #007bff; /* Azul padrão do Bootstrap */
+    border-color: #007bff;
+    color: #fff;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3; /* Azul mais escuro no hover */
+    border-color: #004085;
+}
+
+/* Botão "Atualizar Senha" (Classe .btn-success) */
+.btn-success {
+    background-color: #28a745; /* Verde padrão do Bootstrap */
+    border-color: #28a745;
+    color: #fff;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-success:hover {
+    background-color: #218838; /* Verde mais escuro no hover */
+    border-color: #1e7e34;
+}
+
+/* Botão "Limpar todas as Receitas Favoritas" (Classe .btn-warning) */
+.btn-warning {
+    background-color: #4CAF50; /* Verde vibrante */
+    border-color: #4CAF50;
+    color: #fff; /* Texto branco */
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-warning:hover {
+    background-color: #45a049; /* Verde mais escuro no hover */
+    border-color: #45a049;
+}
+
+/* Botão "Sair da Conta" (Classe .btn-danger) */
+/* E TAMBÉM SE APLICA AO "Remover dos Favoritos" dentro dos cards */
+.btn-danger {
+    background-color: #dc3545; /* Vermelho padrão do Bootstrap */
+    border-color: #dc3545;
+    color: #fff;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-danger:hover {
+    background-color: #c82333; /* Vermelho mais escuro no hover */
+    border-color: #bd2130;
+}
+
+/* --- Ajuste para o botão "Remover dos Favoritos" dentro dos cards --- */
+
+/* Garante que o botão 'Remover dos Favoritos' fique bem posicionado */
+.remove-favorite-button {
+    margin-top: 1rem !important; /* Adiciona um bom espaçamento superior */
+    width: 100%; /* Garante que ocupe a largura total do card */
+    display: block; /* Garante que ocupe sua própria linha */
+    text-align: center; /* Centraliza o texto no botão */
+}
+
+/* Garante que o card-body tenha padding adequado para o conteúdo e o botão */
+.card-body {
+    padding-bottom: 1rem; /* Adiciona padding na parte de baixo para dar espaço ao botão */
+}

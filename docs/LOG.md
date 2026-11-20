@@ -110,3 +110,33 @@ Modelo de entrada:
   - `pytest` → 30 passed, 8 skipped (os testes de infraestrutura só rodam com `MONITOR_INFRA=1`).
 - **Verificação no WSL da Bia (20/11 14:40):** 4 containers Up; `MONITOR_INFRA=1 pytest tests/test_infra.py` → 8 passed; sabotagem `docker compose stop db` → 1 failed (só o db), 7 passed; `docker compose start db` restaurou. Limitação: a sonda TCP aceita a conexão pelo encaminhamento de porta do Docker Desktop antes de o MySQL ficar pronto; as sondas reais da P2 (`SELECT 1`, consulta DNS, diálogo SMTP) resolvem.
 - **Pendências / riscos:** imagens não foram baixadas no ambiente de validação (sem acesso ao Docker Hub); a subida real é conferida no WSL.
+
+## 2026-11-20 15:10 — Site Receitas Práticas no container web e banco inicial
+- **Quem:** Bia (P1, tarefas 2 e 3)
+- **O que mudou:**
+  1. Site copiado do XAMPP para `servicos/web-vuln/site/` **sem** a pasta `.git` e sem o `.sql` (o `.sql` virou `servicos/banco/init.sql`). Servido em `http://127.0.0.1:8080/receitas_práticas/` (mesmo caminho que os links do site já usam); a raiz `/` redireciona para lá.
+  2. Conexão única com o MySQL em `site/db.php`, lendo `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME` do ambiente. As 6 conexões antigas (todas com `localhost` e `root`) agora passam por ele. O site usa o usuário `site` (não `root`).
+  3. `login.php` grava cada tentativa (sucesso, senha errada, e-mail inexistente) em `/var/log/app/login.log`, uma linha JSON `{"ts", "origem", "usuario", "sucesso"}` (função em `login/registro_login.php`). O log fica no volume `web_logs`, para o agente ler depois.
+  4. `logout.php`: removida a linha de JavaScript que quebrava o logout.
+  5. "Esqueci a senha": envio pelo container `smtp` (porta 25, sem usuário e senha); credenciais do Gmail removidas do `mail_config.php`; link do e-mail em `http`.
+  6. Contatos reais do rodapé (e-mail, endereço e telefone) trocados por fictícios.
+  7. Banco: `init.sql` com `usuarios` (já com `nome_completo`, `telefone`, `reset_token`, `reset_token_expiry`, que o site usa e o script original não criava), `recuperacao_senha` e `favorites`; 5 usuários e 4 favoritos **inventados** (`@lab.local`, senhas = hash de texto aleatório). `02-monitor.sh` cria o usuário `monitor` só com `SELECT` e `PROCESS`.
+  8. Container web com `Dockerfile` próprio (PHP 8.3 + `mysqli` + `/server-status` liberado só na rede interna).
+  9. Postfix: todo e-mail para `@lab.local` cai numa caixa única (`/var/mail/lab`).
+  10. `servicos/.env.exemplo` ganhou `SITE_DB_USUARIO`, `SITE_DB_SENHA` e `MONITOR_DB_SENHA`.
+- **Por quê:** o site é o alvo dos ataques; o log de login é a fonte da detecção de força bruta; nenhuma senha pode ficar no repositório.
+- **Arquivos:** `servicos/web-vuln/**`, `servicos/banco/init.sql`, `servicos/banco/02-monitor.sh`, `servicos/docker-compose.yml`, `servicos/.env.exemplo`, `servicos/smtp/Dockerfile`, `servicos/smtp/main.cf`, `tests/varredura_site.py`, `tests/test_site.py`, `tests/test_infra.py`.
+- **Verificação (ambiente de validação, sem Docker Hub):**
+  - Testes escritos antes: `pytest tests/test_site.py` → 9 failed; depois da adaptação → 13 passed.
+  - Ponta a ponta com PHP 8.3, MariaDB e Postfix locais: raiz redireciona para o site; cadastro → 302; senha errada e e-mail inexistente → mensagem e linha `sucesso: false`; login certo → `suaconta.php` e linha `sucesso: true`; favoritos e atualização de dados → `success: true`; logout → 302; "esqueci a senha" → "E-mail enviado" e e-mail entregue em `/var/mail/lab` com o link `http`.
+  - Banco: 3 tabelas, 5 usuários, 4 favoritos; `monitor` lê e recebe `ERROR 1142` ao tentar `INSERT`.
+  - Sabotagens acusadas: tirar `sucesso` do JSON; apagar um `registrar_tentativa()` do `login.php`; dar `INSERT` ao `monitor`; pôr um e-mail do Gmail no `home.html`; senha de root errada no `02-monitor.sh` (para com erro em vez de dizer "criado").
+  - Credenciais originais do `mail_config.php` procuradas no repositório inteiro → 0 arquivos.
+  - `docker compose config` → válido; sem `SITE_DB_SENHA` → erro "defina SITE_DB_SENHA".
+  - `pytest` → 43 passed, 12 skipped (os 12 só rodam com `MONITOR_INFRA=1`).
+- **Verificação no WSL da Bia (20/11 15:14):** `MONITOR_INFRA=1 pytest tests/test_infra.py` → 11 passed, 1 failed: `test_site_receitas_no_ar` não achou "Receitas Práticas" porque o Apache não informava a codificação e o texto foi lido como Latin-1. Correção: `AddDefaultCharset UTF-8` no `servicos/web-vuln/Dockerfile`.
+- **Pendências / riscos:**
+  - Conferir no WSL: `docker compose down -v` (o banco antigo não tem as tabelas; o `init.sql` só roda em volume novo) e `MONITOR_INFRA=1 pytest tests/test_infra.py`.
+  - Vulnerabilidades mantidas de propósito (alvo do laboratório): mensagens diferentes para "e-mail não encontrado" e "senha incorreta" (enumeração de usuários), login sem limite de tentativas, nome do usuário impresso sem escape em `suaconta.php` (XSS), `display_errors` ligado em `resetpassword.php`.
+  - Código morto do site original mantido como estava: `processa_cadastro.php` e `login/update_password.php` usam colunas que não existem.
+- **Verificação final no WSL (20/11 15:17):** `pytest` → 43 passed, 12 skipped; `MONITOR_INFRA=1 pytest tests/test_infra.py` → 12 passed.

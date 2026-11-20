@@ -1,3 +1,4 @@
 <?php
-// Pagina provisoria: prova que o container web esta no ar. Sera substituida pelo site Receitas Praticas.
-echo "web-vuln no ar";
+// Entrada do site: manda para a pagina inicial.
+header('Location: home.html');
+exit();

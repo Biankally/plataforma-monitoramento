@@ -5,10 +5,22 @@
 name: monitoramento
 
 services:
-  web:
-    image: php:8.3-apache            # versao minima; amanha vira o site Receitas Praticas
+  web:                               # site Receitas Praticas (alvo dos ataques)
+    build: ./web-vuln
     ports: ["127.0.0.1:8080:80"]
-    volumes: ["./web-vuln/site:/var/www/html:ro"]
+    environment:
+      DB_HOST: db
+      DB_NAME: cadastro_db
+      DB_USER: ${SITE_DB_USUARIO:-site}
+      DB_PASS: ${SITE_DB_SENHA:?defina SITE_DB_SENHA no servicos/.env}
+      MAIL_HOST: smtp
+      MAIL_PORT: "25"
+      MAIL_FROM: nao-responda@lab.local
+      LOGIN_LOG: /var/log/app/login.log
+    volumes:
+      - "./web-vuln/site:/var/www/html/receitas_práticas:ro"
+      - "web_logs:/var/log/app"        # log de login; o agente vai ler deste volume
+    depends_on: [db, smtp]
     cpus: 1.0
     mem_limit: 512m
     pids_limit: 200
@@ -20,7 +32,12 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?defina MYSQL_ROOT_PASSWORD no servicos/.env}
       MYSQL_DATABASE: cadastro_db
-    volumes: ["db_dados:/var/lib/mysql"]
+      MYSQL_USER: ${SITE_DB_USUARIO:-site}          # usuario do site (nao e root)
+      MYSQL_PASSWORD: ${SITE_DB_SENHA:?defina SITE_DB_SENHA no servicos/.env}
+      MONITOR_DB_SENHA: ${MONITOR_DB_SENHA:?defina MONITOR_DB_SENHA no servicos/.env}
+    volumes:
+      - "db_dados:/var/lib/mysql"
+      - "./banco:/docker-entrypoint-initdb.d:ro"   # init.sql e 02-monitor.sh: so na 1a subida
     cpus: 1.0
     mem_limit: 1g
     pids_limit: 300
@@ -44,3 +61,4 @@ services:
 
 volumes:
   db_dados:
+  web_logs:

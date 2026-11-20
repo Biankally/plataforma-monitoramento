@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-Br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receitas Práticas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="./home.css">
+</head>
+<body>
+<!--Logo abaixo temos o código do NavBar(Menu) onde tem todas as páginas do nosso site-->
+<nav class="navbar navbar-expand-lg bg-dark border-bottom border-body" data-bs-theme="dark">
+  <div class="logotipo-navbar">
+    <a href="./receitaspráticas.html" class="logo">
+      <img src="./imagens/logo/Logotipo.png" alt="Logotipo">
+    </a>
+  </div>
+
+<div class="container-fluid">
+  <a class="navbar-brand" href="./home.html">Receitas Práticas</a>
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+      <li class="nav-item">
+        <a class="nav-link active" aria-current="page" href="./home.html">Home</a>
+      </li>
+
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Receitas
+        </a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="./receitasvegetarianas.html">Receitas Vegetarianas</a></li>
+          <li><a class="dropdown-item" href="./receitasveganas.html">Receitas Veganas</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="./calculadora.html">Calculadora IMC</a></li>
+        </ul>
+      </li>
+    <li class="nav-item">
+        <a class="nav-link" href="./noticias.html">Últimas Notícias</a>
+      </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+         <a class="nav-link" href="./login/suaconta.php">
+             <i class="fas fa-user"></i> <!-- Ícone de conta -->
+         </a>
+ </ul>
+  </div>
+  
+</div>
+</nav>
+
+    <!-- Conteúdo Principal -->
+<br>
+    <div class="content-wrapper">
+        <div class="container"style="max-width: 600px;" >
+            <!-- Card da Calculadora -->
+            <div class="card card-custom">
+                <div class="card-header card-header-custom">
+                    <h4 class="mb-0 text-center">Calculadora de IMC</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="height" class="form-label">Altura (cm):</label>
+                        <input type="number" id="height" class="form-control" placeholder="Ex: 170">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="weight" class="form-label">Peso (kg):</label>
+                        <input type="number" id="weight" class="form-control" placeholder="Ex: 70">
+                    </div>
+                    
+                    <button class="btn btn-success w-100 mb-3" onclick="calculateIMC()">Calcular IMC</button>
+                    
+                    <div id="result" class="alert" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- Card da Tabela de Classificação -->
+            <div class="card card-custom">
+                <div class="card-header card-header-custom">
+                    <h4 class="mb-0 text-center">Classificação do IMC</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>IMC</th>
+                                    <th>Classificação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Abaixo de 18,5</td>
+                                    <td>Abaixo do peso</td>
+                                </tr>
+                                <tr>
+                                    <td>18,5 - 24,9</td>
+                                    <td>Peso normal</td>
+                                </tr>
+                                <tr>
+                                    <td>25 - 29,9</td>
+                                    <td>Sobrepeso</td>
+                                </tr>
+                                <tr>
+                                    <td>30 - 34,9</td>
+                                    <td>Obesidade Grau I</td>
+                                </tr>
+                                <tr>
+                                    <td>35 - 39,9</td>
+                                    <td>Obesidade Grau II</td>
+                                </tr>
+                                <tr>
+                                    <td>Acima de 40</td>
+                                    <td>Obesidade Grau III</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<br>
+    <!-- Scripts -->
+  
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>  
+    <script>
+        function calculateIMC() {
+            const height = parseFloat(document.getElementById('height').value) / 100;
+            const weight = parseFloat(document.getElementById('weight').value);
+            
+            if (isNaN(height) || height <= 0) {
+                alert('Por favor, insira uma altura válida');
+                return;
+            }
+            
+            if (isNaN(weight) || weight <= 0) {
+                alert('Por favor, insira um peso válido');
+                return;
+            }
+            
+            const imc = weight / (height * height);
+            const resultElement = document.getElementById('result');
+            resultElement.style.display = 'block';
+            
+            let classification = '';
+            let alertClass = '';
+            
+            if (imc < 18.5) {
+                classification = 'Abaixo do peso';
+                alertClass = 'alert-warning';
+            } else if (imc < 25) {
+                classification = 'Peso normal';
+                alertClass = 'alert-success';
+            } else if (imc < 30) {
+                classification = 'Sobrepeso';
+                alertClass = 'alert-warning';
+            } else if (imc < 35) {
+                classification = 'Obesidade Grau I';
+                alertClass = 'alert-danger';
+            } else if (imc < 40) {
+                classification = 'Obesidade Grau II';
+                alertClass = 'alert-danger';
+            } else {
+                classification = 'Obesidade Grau III';
+                alertClass = 'alert-danger';
+            }
+            
+            resultElement.className = `alert ${alertClass}`;
+            resultElement.innerHTML = `
+                <strong>Seu IMC: ${imc.toFixed(1)}</strong><br>
+                Classificação: ${classification}
+            `;
+        }
+    </script>
+    
+    <!--Rodapé-->
+      <footer class="bg-dark text-white pt-5 pb-4">
+        <div class="container text-center text-md-left">
+          <div class="row text-center text-md-left">
+      
+            <!-- Receitas Práticas Section -->
+            <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+              <h5 class="text-uppercase mb-4 font-weight-bold text-danger">Receitas Práticas</h5>
+              <p>Bem-vindo ao Receitas Práticas – seu destino favorito para descobrir pratos deliciosos, rápidos e fáceis de preparar! 
+            Aqui, cada receita é feita para simplificar sua vida na cozinha sem abrir mão do sabor. Vamos cozinhar juntos?
+              </p>
+            </div>
+      
+            <!-- Descubra Section -->
+            <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
+              <h5 class="text-uppercase mb-4 font-weight-bold text-danger">Descubra</h5>
+              <p><a href="./receitasvegetarianas.html" class="text-white" style="text-decoration: none;">Receitas Vegetarianas</a></p>
+              <p><a href="./receitasveganas.html" class="text-white" style="text-decoration: none;">Receitas Veganas</a></p>
+              <p><a href="./calculadora.html" class="text-white" style="text-decoration: none;">Calculadora IMC</a></p>
+            </div>
+      
+            <!-- Cliente Section -->
+            <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mt-3">
+              <h5 class="text-uppercase mb-4 font-weight-bold text-danger">Cliente</h5>
+              <p><a href="#" class="text-white" style="text-decoration: none;">Sua conta</a></p>
+              <p><a href="./politica.html" class="text-white" style="text-decoration: none;">Políticas de Privacidade</a></p>
+              <p><a href="./termos.html" class="text-white" style="text-decoration: none;">Termos de Uso</a></p>
+            </div>
+            
+            <!-- Contatos Section -->
+             <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3">
+          <h5 class="text-uppercase mb-4 font-weight-bold text-danger">Contatos</h5>
+          <p><i class="fas fa-home mr-3"></i> Endereço fictício (ambiente de laboratório) </p>
+          <p><i class="fas fa-envelope mr-3"></i>  contato@receitas.lab.local</p>
+          <p><i class="fas fa-phone mr-3"></i>  +55 61 98855050</p>
+          <p><i class="fas fa-print mr-3"></i>  +01 555 741 99</p>
+        </div>
+          </div>
+      
+          <hr class="mb-4">
+          <div class="row align-items-center">
+            <div class="col-md-7 col-lg-8">
+              <p>Copyright ©2025 Todos os direitos reservados por:
+                <a href="./politica.html" style="text-decoration: none;">
+                  <strong class="text-danger">Receitas Práticas</strong>
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+       <!--final do rodapé-->
+
+</body>
+</html>
