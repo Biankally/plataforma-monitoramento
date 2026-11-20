@@ -1,0 +1,12 @@
+# Postfix de laboratorio: aceita e-mail na porta 25 e escreve o log na saida do container.
+compatibility_level = 3.6
+myhostname = smtp.lab.local
+mydomain = lab.local
+inet_interfaces = all
+inet_protocols = ipv4
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+mynetworks = 127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+alias_maps =
+alias_database =
+maillog_file = /dev/stdout
+smtpd_banner = $myhostname ESMTP

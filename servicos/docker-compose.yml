@@ -1,0 +1,46 @@
+# Servicos vigiados pela plataforma (P1). Cada um tem teto de CPU, memoria e processos:
+# um ataque ao "web" bate no teto dele e nao derruba os outros (regra da professora).
+# Portas publicadas so em 127.0.0.1: nada fica exposto na rede da faculdade.
+# Subir:  docker compose up -d --build     (rodar dentro da pasta servicos/)
+name: monitoramento
+
+services:
+  web:
+    image: php:8.3-apache            # versao minima; amanha vira o site Receitas Praticas
+    ports: ["127.0.0.1:8080:80"]
+    volumes: ["./web-vuln/site:/var/www/html:ro"]
+    cpus: 1.0
+    mem_limit: 512m
+    pids_limit: 200
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    ports: ["127.0.0.1:3307:3306"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?defina MYSQL_ROOT_PASSWORD no servicos/.env}
+      MYSQL_DATABASE: cadastro_db
+    volumes: ["db_dados:/var/lib/mysql"]
+    cpus: 1.0
+    mem_limit: 1g
+    pids_limit: 300
+    restart: unless-stopped
+
+  dns:
+    build: ./dns
+    ports: ["127.0.0.1:1053:53/udp", "127.0.0.1:1053:53/tcp"]
+    cpus: 0.5
+    mem_limit: 256m
+    pids_limit: 100
+    restart: unless-stopped
+
+  smtp:
+    build: ./smtp
+    ports: ["127.0.0.1:2525:25"]
+    cpus: 0.5
+    mem_limit: 256m
+    pids_limit: 100
+    restart: unless-stopped
+
+volumes:
+  db_dados:
