@@ -8,12 +8,12 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 ## 1. Entregas obrigatórias (enunciado, seção 2)
 
-- [ ] Front-end responsivo com dashboard **por serviço** — `plataforma/frontend/`
-- [ ] Front-end com **visão consolidada** (todos os serviços) — `plataforma/frontend/`
-- [ ] Backend de **ingestão** de métricas — `plataforma/api/`
-- [ ] **Armazenamento** de métricas — `plataforma/api/`
-- [ ] Regras de alerta — `plataforma/alertas/`
-- [ ] Canal de notificação por **e-mail** — `plataforma/alertas/`
+- [ ] Front-end responsivo com dashboard **por serviço** — `plataforma/dashboard/`
+- [ ] Front-end com **visão consolidada** (todos os serviços) — `plataforma/dashboard/`
+- [ ] Backend de **ingestão** de métricas — `plataforma/api/app.py`
+- [ ] **Armazenamento** de métricas — `plataforma/infra/banco.py`
+- [ ] Regras de alerta — `plataforma/dominio/alertas.py`, `config/regras.toml`
+- [ ] Canal de notificação por **e-mail** — `plataforma/infra/notificador.py`
 - [ ] Documentação: **arquitetura** — `docs/arquitetura.md`
 - [ ] Documentação: **runbooks** — `docs/runbooks/`
 - [ ] Documentação: **playbooks de incidentes** — `docs/playbooks/`
@@ -24,10 +24,10 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 ## 2. Requisitos passados em sala (quadro)
 
-- [ ] Plataforma em **VM própria** ("VMp") (?) — `docs/arquitetura.md`
-- [ ] Coleta por **telemetria**: plataforma → serviços — `plataforma/coletor/`
+- [ ] Plataforma em **VM própria** (VM-P); serviços em **containers isolados** na VM-S — `docs/arquitetura.md`
+- [ ] Coleta por **telemetria**: plataforma → serviços — `plataforma/infra/coletor.py`
 - [ ] Banco de dados: MySQL, SQLite ou PostgreSQL — `servicos/banco/`
-- [ ] Aplicação **web vulnerável em PHP** (?) — `servicos/web-vuln/`
+- [ ] Aplicação **web vulnerável em PHP** (site Receitas Práticas) — `servicos/web-vuln/`
 - [ ] DNS com **Unbound ou BIND** — `servicos/dns/`
 - [ ] SMTP com **Postfix** — `servicos/smtp/`
 - [ ] **Arquitetura** bem documentada (ênfase da professora) — `docs/arquitetura.md`
@@ -73,10 +73,10 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 ## 5. Segurança e monitoramentos extras (enunciado, seção 5)
 
-- [ ] Detecção de **anomalias de tráfego** (picos, indicadores de DDoS) — `plataforma/seguranca/`
-- [ ] Detecção de **falhas de autenticação** (logins falhos por conta/IP, brute-force) — `plataforma/seguranca/`
-- [ ] Alerta de **alteração de arquivos de configuração** — `plataforma/seguranca/`
-- [ ] Monitoramento de **vulnerabilidade conhecida por serviço** — `plataforma/seguranca/`
+- [ ] Detecção de **anomalias de tráfego** (picos, indicadores de DDoS) — `plataforma/dominio/seguranca.py`
+- [ ] Detecção de **falhas de autenticação** (logins falhos por conta/IP, brute-force) — `plataforma/dominio/seguranca.py`
+- [ ] Alerta de **alteração de arquivos de configuração** — `plataforma/dominio/seguranca.py`
+- [ ] Monitoramento de **vulnerabilidade conhecida por serviço** — `plataforma/dominio/seguranca.py`
 
 ## 6. Testes (evidências para o documento)
 
@@ -115,8 +115,17 @@ Normas: NBR 14724:2024 (estrutura), NBR 6023:2018 (referências), NBR 10520:2023
 - [ ] Nenhuma senha, token ou chave privada em nenhum arquivo do repositório
 - [ ] README explicando o projeto e como rodar
 
-## 9. Pendências com a professora
+## 9. Garantia de execução (regras do projeto)
 
-- [ ] (?) Quantidade de VMs (plataforma separada dos serviços? um serviço por VM?)
-- [ ] (?) Aplicação web vulnerável: pronta (ex.: DVWA) ou desenvolvida pelos alunos?
-- [ ] (?) Repositório público ou privado com a professora como colaboradora?
+- [x] Teste de camadas (`tests/test_camadas.py`) com sabotagem
+- [x] Teste termômetro de ponta a ponta (`tests/test_termometro.py`) com sabotagem
+- [ ] GitHub Actions verde em todo push
+- [ ] Teste de isolamento: ataque ao `web` sem derrubar `db`, `dns` e `smtp` (regra da professora)
+- [ ] Ensaio final: clonar numa pasta nova, instalar só pelo README e rodar a demonstração
+
+## 10. Decisões com a professora (resolvidas)
+
+- [x] Infraestrutura livre (VMs ou containers), desde que um ataque não derrube outros serviços
+- [x] Grupo em trio permitido
+- [x] Repositório privado com a professora como colaboradora (falta o usuário dela no GitHub)
+- [ ] Aplicação vulnerável: usar o site do grupo (avisar a professora)

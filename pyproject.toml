@@ -1,0 +1,10 @@
+[project]
+name = "plataforma-monitoramento"
+version = "0.1.0"
+description = "Trabalho final de Redes de Computadores (IDP): plataforma de monitoramento de servicos"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"

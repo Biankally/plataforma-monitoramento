@@ -1,0 +1,27 @@
+# Enderecos dos servicos vigiados. Mudar de VM ou de container = mudar so este arquivo.
+[plataforma]
+api_url = "http://127.0.0.1:5000"
+intervalo_s = 15
+
+[[servico]]
+nome = "web"
+tipo = "http"
+url = "http://192.168.56.20/"
+
+[[servico]]
+nome = "db"
+tipo = "tcp"
+host = "192.168.56.20"
+porta = 3306
+
+[[servico]]
+nome = "dns"
+tipo = "tcp"
+host = "192.168.56.20"
+porta = 53
+
+[[servico]]
+nome = "smtp"
+tipo = "tcp"
+host = "192.168.56.20"
+porta = 25
