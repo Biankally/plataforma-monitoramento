@@ -1,0 +1,24 @@
+
+main {
+    margin: 0 auto;
+    max-width: 1000px;
+    text-align: justify; /* Já ajustado para justificar o texto principal */
+}
+
+main p {
+    text-align: justify; /* Garante que os parágrafos dentro de main sejam justificados */
+}
+
+h2 {
+    font-size: 20px;
+}
+
+.logo img {
+    height: 50px;
+    width: auto;
+    border-radius: 500px;
+}
+
+footer {
+    text-align: center; /* Esta regra centralizará todo o conteúdo do rodapé */
+}

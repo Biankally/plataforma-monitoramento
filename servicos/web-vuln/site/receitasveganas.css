@@ -1,0 +1,113 @@
+.logo img {
+    height: 50px; /* Ajuste a altura conforme necessário */
+    width: auto;
+    border-radius: 600px;
+}
+
+.card {
+    width: 100%; /* Ajuste para ocupar 100% da largura do contêiner */
+    max-width: 18rem; /* Define a largura máxima */
+    margin-bottom: 1rem; /* Espaçamento inferior */
+}
+
+.card a {
+    color: inherit; /* Herda a cor do elemento pai */
+    text-decoration: none; /* Remove o sublinhado */
+}
+
+.card a:hover {
+    color: #000; /* Altera a cor ao passar o mouse (opcional) */
+}
+
+.card-img {
+    width: 100%;
+    height: 0;
+    padding-top: 100%; /* Proporção 1x1 */
+    position: relative;
+}
+.card-img img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ajusta a imagem para cobrir o elemento */
+}
+
+.row {
+    display: flex;
+    justify-content: center; /* Centraliza as colunas horizontalmente */
+}
+
+/* --- Novas regras para o botão de favorito --- */
+
+/* Estilo padrão do botão (quando não favoritado) */
+.favorite-button {
+    color: #333; /* Cor do texto */
+    padding: 10px 15px; /* Espaçamento interno */
+    border-radius: 5px; /* Bordas arredondadas */
+    cursor: pointer; /* Cursor de ponteiro */
+    margin-top: 10px; /* Espaço entre o texto e o botão */
+    /* Remove background-color e border daqui para deixar o Bootstrap gerenciar */
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* Transição suave */
+}
+
+/* Cor quando NÃO está favoritado (classe btn-secondary do Bootstrap) */
+.btn-secondary.favorite-button {
+    background-color: #f0f0f0; /* Um cinza claro */
+    border-color: #dcdcdc; /* Borda um pouco mais escura */
+    color: #333; /* Texto escuro */
+}
+
+.btn-secondary.favorite-button:hover {
+    background-color: #e0e0e0; /* Um cinza um pouco mais escuro no hover */
+    border-color: #c0c0c0;
+}
+
+/* Cor quando ESTÁ favoritado (classe btn-warning do Bootstrap) */
+.btn-warning.favorite-button {
+    background-color: #fbefb1; /* Um verde vibrante */
+    border-color: #ffffe1;
+    color: #000000; /* Texto branco para contraste */
+}
+
+.btn-warning.favorite-button:hover {
+    background-color: #fcf768; /* Um verde um pouco mais escuro no hover */
+    border-color: #ffff58;
+}
+
+/* --- Fim das regras para o botão de favorito --- */
+
+
+#favorites-list img {
+    border: 1px solid #ccc;
+    margin-right: 8px;
+}
+.favorite-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 500px;
+}
+.remove-favorite {
+    font-size: 12px;
+}
+
+ul {
+    display: block; /* Assegure-se de que a lista está visível */
+    color: #000; /* Altere a cor para garantir que o texto seja visível */
+}
+
+/* Posiciona o ícone de login no canto superior direito */
+.navbar-nav.login-icon-right {
+    margin-left: auto; /* Empurra o item para a direita */
+}
+
+/* Garante que em telas maiores o ícone permaneça à direita */
+@media (min-width: 992px) { /* lg breakpoint do Bootstrap */
+    #navbarSupportedContent .navbar-nav.login-icon-right {
+        flex-direction: row;
+        align-items: center;
+    }
+}

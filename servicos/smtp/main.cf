@@ -4,7 +4,14 @@ myhostname = smtp.lab.local
 mydomain = lab.local
 inet_interfaces = all
 inet_protocols = ipv4
-mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+mydestination = $myhostname, localhost.$mydomain, localhost
+# Todo e-mail para @lab.local (usuarios inventados do site) cai numa caixa unica, sem precisar
+# criar usuario no sistema. Ver com: docker compose exec smtp ls /var/mail/lab/new
+virtual_mailbox_domains = lab.local
+virtual_mailbox_base = /var/mail
+virtual_mailbox_maps = static:lab/
+virtual_uid_maps = static:1000
+virtual_gid_maps = static:1000
 mynetworks = 127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 alias_maps =
 alias_database =
