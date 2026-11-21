@@ -165,3 +165,19 @@ Modelo de entrada:
 - **Verificação:** `pytest tests/test_derivadas.py` → 13 passed (teste escrito antes: erro de import); valores calculados à mão no cabeçalho do teste. Mutações (p95, divisão por zero, unidade de e-mails/min, faixa 5xx, falha da sonda DNS) → acusadas. `pytest` inteiro (cópia do repositório com os arquivos recebidos) → 44 passed, 5 de 5 vezes.
 - **Pendências / riscos:** premissas: `log_web` e `postfix` são contagens da janela (não acumulam); `apache` e `unbound` são acumulados; `smtp.taxa_erro_pct` usa como total sent+deferred+bounced+rejeicoes+timeouts; p95 pelo posto mais próximo. Confirmar com P1 (agente).
 
+
+## 2026-11-21 HH:MM — Coletor junta sondas e agente num lote só (P2, tarefa 4)
+- **Quem:** Luiz (P2)
+- **O que mudou:**
+  1. `coletor.py` agora entende os tipos de sonda `mysql`, `dns` e `smtp` (além de `http` e `tcp`) e junta as medições das sondas com as do agente num único lote por ciclo. Tipo desconhecido acusa erro.
+  2. Agente opcional: só é chamado se `agente_url` (em `servicos.toml`) ou `MONITOR_AGENTE_URL` estiver definido; o token vem de `MONITOR_AGENTE_TOKEN`. Agente configurado sem token acusa erro. Se o agente falhar, o lote segue só com as sondas e o Coletor avisa (confira).
+  3. Novo `dominio/derivadas_db.py`: transforma os contadores brutos do MySQL (`status.*`) nas métricas `db.*` (qps, rollbacks/s, conexões abortadas, uso de conexões, slow queries/min, crescimento em MB/dia). No 1º ciclo só saem os valores instantâneos; contador que diminuiu (reinício) não gera taxa; `max_connections` zero não divide por zero; banco fora do ar não gera nada nem vira linha de base. O crescimento usa a leitura mais antiga do histórico e exige pelo menos 60 s (confira).
+  4. Falha da sonta DNS entra no cálculo de `dns.taxa_erro_pct`.
+  5. `servicos.toml`: serviços `db`, `dns` e `smtp` com os novos `tipo` (`mysql`, `dns`, `smtp`); senha do usuário `monitor` em `MONITOR_DB_SENHA` (sem senha acusa erro) e consulta DNS de teste em `MONITOR_DNS_CONSULTA`.
+- **Por quê:** a tarefa 4 do pedido P2: juntar sondas e agente num lote só, mantendo o termômetro verde.
+- **Arquivos:** `plataforma/infra/coletor.py`, `plataforma/dominio/derivadas_db.py`, `config/servicos.toml`, `tests/test_coletor.py`, `tests/test_derivadas_db.py`, `docs/LOG.md`.
+- **Verificação:** `pytest tests/test_coletor.py tests/test_derivadas_db.py` → 21 passed (13 + 8). `pytest` inteiro → (cole aqui: N passed, M skipped). Sabotagens acusadas pelos testes: agente fora do ar, agente configurado sem token, banco fora do ar não vira linha de base, DNS fora do ar entra na taxa de erro, MySQL sem senha, tipo desconhecido, contador que diminuiu, crescimento com histórico curto, `max_connections` zero. (Acrescente as mutações no código que você tiver feito, se fez.)
+- **Pendências / riscos:**
+  - Não testado com agente real: a pasta `servicos/agente/` ainda está vazia (P1); os nomes `MONITOR_AGENTE_URL` e `MONITOR_AGENTE_TOKEN` precisam ser confirmados com P1.
+  - `servicos/.env.exemplo` e o `.env.exemplo` da raiz ainda não listam `MONITOR_AGENTE_TOKEN`, `MONITOR_DB_SENHA` e `MONITOR_DNS_CONSULTA` (arquivos de outra pasta; combinar com P1).
+  - Conferir no WSL com os containers no ar: `MONITOR_INFRA=1` e a senha real do usuário `monitor`.
