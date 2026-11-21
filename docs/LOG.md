@@ -165,3 +165,56 @@ Modelo de entrada:
 - **Verificação:** `pytest tests/test_derivadas.py` → 13 passed (teste escrito antes: erro de import); valores calculados à mão no cabeçalho do teste. Mutações (p95, divisão por zero, unidade de e-mails/min, faixa 5xx, falha da sonda DNS) → acusadas. `pytest` inteiro (cópia do repositório com os arquivos recebidos) → 44 passed, 5 de 5 vezes.
 - **Pendências / riscos:** premissas: `log_web` e `postfix` são contagens da janela (não acumulam); `apache` e `unbound` são acumulados; `smtp.taxa_erro_pct` usa como total sent+deferred+bounced+rejeicoes+timeouts; p95 pelo posto mais próximo. Confirmar com P1 (agente).
 
+## 2026-11-21 HH:MM — Coletor junta sondas e agente num lote só (P2, tarefa 4)
+- **Quem:** Luiz (P2)
+- **O que mudou:**
+  1. `coletor.py` agora entende os tipos de sonda `mysql`, `dns` e `smtp` (além de `http` e `tcp`) e junta as medições das sondas com as do agente num único lote por ciclo. Tipo desconhecido acusa erro.
+  2. Agente opcional: só é chamado se `agente_url` (em `servicos.toml`) ou `MONITOR_AGENTE_URL` estiver definido; o token vem de `MONITOR_AGENTE_TOKEN`. Agente configurado sem token acusa erro. Se o agente falhar, o lote segue só com as sondas e o Coletor avisa (confira).
+  3. Novo `dominio/derivadas_db.py`: transforma os contadores brutos do MySQL (`status.*`) nas métricas `db.*` (qps, rollbacks/s, conexões abortadas, uso de conexões, slow queries/min, crescimento em MB/dia). No 1º ciclo só saem os valores instantâneos; contador que diminuiu (reinício) não gera taxa; `max_connections` zero não divide por zero; banco fora do ar não gera nada nem vira linha de base. O crescimento usa a leitura mais antiga do histórico e exige pelo menos 60 s (confira).
+  4. Falha da sonta DNS entra no cálculo de `dns.taxa_erro_pct`.
+  5. `servicos.toml`: serviços `db`, `dns` e `smtp` com os novos `tipo` (`mysql`, `dns`, `smtp`); senha do usuário `monitor` em `MONITOR_DB_SENHA` (sem senha acusa erro) e consulta DNS de teste em `MONITOR_DNS_CONSULTA`.
+- **Por quê:** a tarefa 4 do pedido P2: juntar sondas e agente num lote só, mantendo o termômetro verde.
+- **Arquivos:** `plataforma/infra/coletor.py`, `plataforma/dominio/derivadas_db.py`, `config/servicos.toml`, `tests/test_coletor.py`, `tests/test_derivadas_db.py`, `docs/LOG.md`.
+- **Verificação:** `pytest tests/test_coletor.py tests/test_derivadas_db.py` → 21 passed (13 + 8). `pytest` inteiro → (cole aqui: N passed, M skipped). Sabotagens acusadas pelos testes: agente fora do ar, agente configurado sem token, banco fora do ar não vira linha de base, DNS fora do ar entra na taxa de erro, MySQL sem senha, tipo desconhecido, contador que diminuiu, crescimento com histórico curto, `max_connections` zero. (Acrescente as mutações no código que você tiver feito, se fez.)
+- **Pendências / riscos:**
+  - Não testado com agente real: a pasta `servicos/agente/` ainda está vazia (P1); os nomes `MONITOR_AGENTE_URL` e `MONITOR_AGENTE_TOKEN` precisam ser confirmados com P1.
+  - `servicos/.env.exemplo` e o `.env.exemplo` da raiz ainda não listam `MONITOR_AGENTE_TOKEN`, `MONITOR_DB_SENHA` e `MONITOR_DNS_CONSULTA` (arquivos de outra pasta; combinar com P1).
+  - Conferir no WSL com os containers no ar: `MONITOR_INFRA=1` e a senha real do usuário `monitor`.
+
+## 2026-11-21 HH:MM — Regras de alerta de todas as métricas (P2, tarefa 5)
+- **Quem:** Luiz (P2)
+- **O que mudou:** `config/regras.toml` passou de 6 para 27 regras, cobrindo disponibilidade (as 4 com `atencao_imediata`), web, banco, DNS, SMTP e máquina/containers. As 11 métricas sem limite próprio (volumes e contagens brutas) ficam numa lista com o motivo em `tests/test_regras.py`; o teste exige que toda métrica do catálogo tenha regra ou apareça nessa lista.
+- **Por quê:** o pedido P2 (tarefa 5) exige regra para todas as métricas do catálogo, com limites documentados.
+- **Arquivos:** `config/regras.toml`, `tests/test_regras.py`, `docs/LOG.md`.
+- **Verificação:**
+  - Teste escrito antes: 1 failed (`test_toda_metrica_do_catalogo_tem_regra_ou_motivo_para_nao_ter`) com o `regras.toml` antigo de 6 regras.
+  - `pytest tests/test_regras.py -v` → 9 passed in 0.04s (WSL, 21/11).
+  - `pytest` inteiro → 87 passed, 15 skipped (12 de `test_infra.py`, que exigem `MONITOR_INFRA=1` com os containers no ar, e 3 de `test_site.py`, porque o PHP não está instalado no WSL).
+  - Sabotagens acusadas nos testes: métrica inventada, crítico menor que atenção (com `>` e com `<`), operador inválido, campo extra e campo faltando.
+  - Mutações no `regras.toml` (regra apagada, crítico menor que atenção, métrica inventada, `atencao_imediata` removido da disponibilidade do web) → todas acusadas.
+- **Pendências / riscos:**
+  - Os limites novos são propostas de valores típicos para o laboratório (os 6 limites antigos foram mantidos). Conferir com a seção 8 da arquitetura e recalibrar com a linha de base medida nos testes.
+  - `docs/arquitetura.md` ainda não está no repositório (tarefa 7), então a tabela de limites do documento precisa ser gerada a partir deste `regras.toml`.
+
+  ## 2026-11-21 18:00 — Segurança: tráfego, falhas de login e alteração de configuração (P2, tarefa 6)
+- **Quem:** Luiz (P2)
+- **O que mudou:**
+  1. Novo `dominio/seguranca.py` (Python puro): escore z de tráfego (`web.rps`, `db.qps`, `dns.qps`, `smtp.emails_min`; histórico de 30 min, mínimo de 20 pontos, z ≥ 3 ATENÇÃO e z ≥ 5 CRÍTICO, só picos); falhas de login por IP em 60 s (5 = ATENÇÃO, 20 = CRÍTICO); hash diferente da linha de base ou arquivo sumido = CRÍTICO; regra para não repetir o mesmo evento a cada ciclo (300 s para tráfego e login, 3600 s para configuração; subir de nível sempre registra); validação do que vem do agente.
+  2. `api/app.py`: o lote do `POST /api/ingest` aceita o campo **opcional** `seguranca` (`{"auth": [...], "hashes": {...}}`, formato do `agente_exemplo.json`); lote sem o campo funciona como antes; campo fora do formato → 400 e nada é gravado. Novas rotas: `GET /api/seguranca?limite=` (1 a 500) e `POST /api/seguranca/linha-base` (com `X-Token`; sem corpo aceita os últimos hashes do agente, com `{"hashes": {...}}` usa os enviados). Cada evento novo é gravado em `evento_seguranca` e avisado por e-mail pelo notificador.
+  3. `infra/banco.py`: tabela nova `hash_arquivo` (linha de base e última leitura) e índice; métodos `registrar_evento_seguranca`, `eventos_seguranca`, `ultimo_evento_seguranca`, `substituir_hashes`, `ler_hashes`. A coluna `origem` de `evento_seguranca` guarda a chave do evento (IP, caminho do arquivo ou métrica).
+  4. `infra/notificador.py`: o e-mail ganhou a linha `Detalhe:` quando o alerta tem esse campo (alertas antigos não mudam).
+- **Por quê:** tarefa 6 do pedido P2 (CHECKLIST, seção 5: anomalias de tráfego, falhas de autenticação e alteração de configuração).
+- **Arquivos:** `plataforma/dominio/seguranca.py`, `plataforma/api/app.py`, `plataforma/infra/banco.py`, `plataforma/infra/notificador.py`, `tests/test_seguranca.py`, `tests/test_api_seguranca.py`.
+- **Verificação:**
+  - Testes escritos antes: `test_seguranca.py` falhou por import (módulo inexistente) e `test_api_seguranca.py` → 16 failed.
+  - `pytest tests/test_seguranca.py tests/test_api_seguranca.py -v` → (cole o resultado aqui).
+  - `pytest` inteiro → (cole o resultado aqui).
+  - 25 mutações no código (limite de z, queda tratada como ataque, desvio mínimo, histórico curto, login com sucesso contando, borda da janela de 60 s, IPs somados, limite crítico, arquivo sumido ignorado, arquivo novo alarmando, repetição de evento, subir de nível, validações, `linha-base` sem token, histórico incluindo o próprio lote, comparar com a leitura atual em vez da linha de base, gravar antes de validar, e-mail não enviado, faixa de `limite`, linha de base não substituída, chave do evento ignorada) → todas acusadas pelos testes.
+- **Pendências / riscos:**
+  - **Combinar com o grupo:** campo opcional `seguranca` no lote (extensão do contrato do `ingest`) e a coluna `origem` usada como chave do evento.
+  - **Coletor (tarefa 4):** precisa copiar `auth` e `hashes` da leitura do agente para o campo `seguranca` do lote; sem isso a API não recebe falhas de login nem hashes (tráfego já funciona, vem das métricas).
+  - **P1 (agente):** premissa de que `auth` traz as tentativas dos últimos 60 s (ou mais; a API filtra pela janela) e `hashes` traz todos os arquivos vigiados a cada leitura; se o agente enviar só as tentativas novas de cada ciclo, o limite de 5 e 20 por 60 s subestima.
+  - Limites propostos (z 3 e 5; 5 e 20 falhas; configuração = CRÍTICO; intervalos de 300 s e 3600 s), a confirmar com a seção de segurança da arquitetura e recalibrar com a linha de base medida.
+  - Durante um ataque longo o histórico de 30 min incorpora o pico, e o z cai; aceitável para o laboratório.
+  - Sem regra de varredura de vulnerabilidades (`VULNERABILIDADE` existe no esquema, mas o pedido P2 não a lista) e sem contagem de falhas por conta.
+  - O e-mail de configuração tem a linha de detalhe longa, e no modo "arquivo" o `.txt` mostra a quebra do formato (quoted-printable); no cliente de e-mail aparece normal.
