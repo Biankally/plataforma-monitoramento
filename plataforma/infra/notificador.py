@@ -26,6 +26,7 @@ def montar_email(alerta: dict) -> EmailMessage:
         f"Valor: {alerta['valor']} (limite: {alerta.get('limite')})\n"
         f"Nivel: {alerta['nivel_anterior']} -> {alerta['nivel_novo']}\n"
         f"Horario (epoch UTC): {alerta['ts']}\n"
+        + (f"Detalhe: {alerta['detalhe']}\n" if alerta.get("detalhe") else "")
     )
     return msg
 
