@@ -187,3 +187,75 @@ def test_servicos_toml_do_repositorio_so_usa_tipos_que_o_coletor_conhece(monkeyp
     for s in servicos:
         coletor.medir(s)  # tipo desconhecido levantaria ValueError
     assert chamadas == ["http", "sonda_mysql", "sonda_dns", "sonda_smtp"]  # cada tipo chama a sonda certa
+
+
+# ---------------------------------------------------------------- seguranca: o Coletor repassa login e hashes do agente
+class _Resposta:
+    def __init__(self, status=201):
+        self.status_code = status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import requests
+            raise requests.HTTPError(f"HTTP {self.status_code}")
+
+
+def _gravar_posts(monkeypatch, status_seguranca=201):
+    posts = []
+
+    def falso(url, json=None, headers=None, timeout=None):
+        posts.append((url, json, headers))
+        return _Resposta(status_seguranca if url.endswith("/seguranca/leitura") else 201)
+
+    monkeypatch.setattr(coletor.requests, "post", falso)
+    return posts
+
+
+def test_ciclo_envia_o_lote_e_depois_a_leitura_de_seguranca(monkeypatch):
+    Cenario(monkeypatch)
+    posts = _gravar_posts(monkeypatch)
+    coletor.ciclo("http://api", "tok-api", coletor.Memoria())
+    assert [u for u, _, _ in posts] == ["http://api/api/ingest", "http://api/api/seguranca/leitura"]
+    assert all(h == {"X-Token": "tok-api"} for _, _, h in posts)
+    assert posts[1][1] == {"ts": EXEMPLO["ts"], "auth": EXEMPLO["auth"], "hashes": EXEMPLO["hashes"]}
+
+
+def test_sabotagem_agente_fora_do_ar_nao_envia_seguranca(monkeypatch):
+    c = Cenario(monkeypatch)
+    c.agente = ErroAgente("fora")
+    posts = _gravar_posts(monkeypatch)
+    coletor.ciclo("http://api", "t", coletor.Memoria())
+    assert [u for u, _, _ in posts] == ["http://api/api/ingest"]
+
+
+def test_sabotagem_leitura_nao_e_reenviada_no_ciclo_seguinte(monkeypatch):
+    c = Cenario(monkeypatch)
+    posts = _gravar_posts(monkeypatch)
+    memoria = coletor.Memoria()
+    coletor.ciclo("http://api", "t", memoria)
+    c.agente = ErroAgente("caiu")
+    coletor.ciclo("http://api", "t", memoria)
+    assert [u.rsplit("/", 1)[-1] for u, _, _ in posts] == ["ingest", "leitura", "ingest"]
+
+
+def test_agente_sem_auth_nem_hashes_manda_lista_vazia_e_sem_hashes(monkeypatch):
+    c = Cenario(monkeypatch)
+    c.agente = {"ts": EXEMPLO["ts"], "host": EXEMPLO["host"]}
+    posts = _gravar_posts(monkeypatch)
+    coletor.ciclo("http://api", "t", coletor.Memoria())
+    assert posts[1][1] == {"ts": EXEMPLO["ts"], "auth": []}
+
+
+def test_sabotagem_api_recusa_a_leitura_de_seguranca_acusa_erro(monkeypatch):
+    import requests
+    Cenario(monkeypatch)
+    _gravar_posts(monkeypatch, status_seguranca=401)
+    with pytest.raises(requests.HTTPError):
+        coletor.ciclo("http://api", "t", coletor.Memoria())
+
+
+def test_sem_agente_configurado_nao_chama_a_api_de_seguranca(monkeypatch):
+    Cenario(monkeypatch, plat={})
+    posts = _gravar_posts(monkeypatch)
+    coletor.ciclo("http://api", "t", coletor.Memoria())
+    assert [u for u, _, _ in posts] == ["http://api/api/ingest"]
