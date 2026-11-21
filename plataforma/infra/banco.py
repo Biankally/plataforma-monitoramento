@@ -32,14 +32,6 @@ CREATE TABLE IF NOT EXISTS evento_seguranca (
   tipo TEXT NOT NULL CHECK (tipo IN ('TRAFEGO','AUTENTICACAO','CONFIGURACAO','VULNERABILIDADE')),
   servico TEXT NOT NULL, nivel TEXT NOT NULL CHECK (nivel IN ('ATENCAO','CRITICO')),
   origem TEXT, detalhe TEXT NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_evento_tipo_servico_ts ON evento_seguranca (tipo, servico, ts);
-CREATE TABLE IF NOT EXISTS tentativa_login (
-  id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, origem TEXT NOT NULL,
-  usuario TEXT NOT NULL, sucesso INTEGER NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_tentativa_ts ON tentativa_login (ts);
-CREATE TABLE IF NOT EXISTS hash_arquivo (
-  caminho TEXT PRIMARY KEY, atual TEXT NOT NULL, ts_atual INTEGER NOT NULL,
-  base TEXT, desde_base INTEGER);
 """
 
 
@@ -115,62 +107,3 @@ class Banco:
     def apagar_antigas(self, dias: int = 7) -> None:
         with self._conectar() as c:
             c.execute("DELETE FROM amostra WHERE ts < ?", (int(time.time()) - dias * 86400,))
-
-    # --- seguranca ---
-    def registrar_evento(self, ts: int, tipo: str, servico: str, nivel: str, origem: str | None,
-                         detalhe: str) -> int:
-        with self._conectar() as c:
-            cur = c.execute(
-                "INSERT INTO evento_seguranca (ts, tipo, servico, nivel, origem, detalhe) VALUES (?, ?, ?, ?, ?, ?)",
-                (ts, tipo, servico, nivel, origem, detalhe),
-            )
-            return int(cur.lastrowid)
-
-    def eventos_seguranca(self, limite: int = 50) -> list[dict]:
-        with self._conectar() as c:
-            q = "SELECT * FROM evento_seguranca ORDER BY id DESC LIMIT ?"
-            return [dict(r) for r in c.execute(q, (limite,))]
-
-    def eventos_recentes(self, tipo: str, servico: str, origem: str | None, desde: int) -> list[dict]:
-        """Eventos do mesmo tipo, servico e origem (None = sem origem) a partir de `desde`."""
-        with self._conectar() as c:
-            q = ("SELECT * FROM evento_seguranca WHERE tipo = ? AND servico = ? AND ts >= ?"
-                 " AND COALESCE(origem, '') = COALESCE(?, '') ORDER BY id DESC")
-            return [dict(r) for r in c.execute(q, (tipo, servico, desde, origem))]
-
-    def registrar_tentativas(self, tentativas: list[dict]) -> None:
-        with self._conectar() as c:
-            c.executemany(
-                "INSERT INTO tentativa_login (ts, origem, usuario, sucesso) VALUES (?, ?, ?, ?)",
-                [(t["ts"], t["origem"], t["usuario"], 1 if t["sucesso"] else 0) for t in tentativas],
-            )
-
-    def falhas_por_ip(self, desde: int, ate: int) -> dict[str, int]:
-        with self._conectar() as c:
-            q = ("SELECT origem, COUNT(*) AS n FROM tentativa_login"
-                 " WHERE sucesso = 0 AND ts BETWEEN ? AND ? GROUP BY origem")
-            return {r["origem"]: r["n"] for r in c.execute(q, (desde, ate))}
-
-    def salvar_hashes(self, ts: int, hashes: dict[str, str]) -> None:
-        with self._conectar() as c:
-            c.executemany(
-                "INSERT INTO hash_arquivo (caminho, atual, ts_atual) VALUES (?, ?, ?)"
-                " ON CONFLICT(caminho) DO UPDATE SET atual = excluded.atual, ts_atual = excluded.ts_atual",
-                [(caminho, h, ts) for caminho, h in hashes.items()],
-            )
-
-    def definir_linha_base(self, ts: int) -> int:
-        """Aceita os hashes atuais como linha de base. Devolve quantos arquivos."""
-        with self._conectar() as c:
-            return c.execute("UPDATE hash_arquivo SET base = atual, desde_base = ?", (ts,)).rowcount
-
-    def linha_base(self) -> dict[str, str]:
-        with self._conectar() as c:
-            return {r["caminho"]: r["base"] for r in c.execute(
-                "SELECT caminho, base FROM hash_arquivo WHERE base IS NOT NULL ORDER BY caminho")}
-
-    def linha_base_detalhada(self) -> list[dict]:
-        with self._conectar() as c:
-            return [dict(r) for r in c.execute(
-                "SELECT caminho, base AS hash, desde_base AS desde FROM hash_arquivo"
-                " WHERE base IS NOT NULL ORDER BY caminho")]
