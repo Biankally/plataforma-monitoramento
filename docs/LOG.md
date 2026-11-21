@@ -165,3 +165,45 @@ Modelo de entrada:
 - **Verificação:** `pytest tests/test_derivadas.py` → 13 passed (teste escrito antes: erro de import); valores calculados à mão no cabeçalho do teste. Mutações (p95, divisão por zero, unidade de e-mails/min, faixa 5xx, falha da sonda DNS) → acusadas. `pytest` inteiro (cópia do repositório com os arquivos recebidos) → 44 passed, 5 de 5 vezes.
 - **Pendências / riscos:** premissas: `log_web` e `postfix` são contagens da janela (não acumulam); `apache` e `unbound` são acumulados; `smtp.taxa_erro_pct` usa como total sent+deferred+bounced+rejeicoes+timeouts; p95 pelo posto mais próximo. Confirmar com P1 (agente).
 
+## 2026-11-21 $HORA — Coletor junta sondas reais e agente num lote só (P2, tarefa 4)
+- **Quem:** Luiz (P2)
+- **O que mudou:**
+  1. \`coletor.py\` ganhou os tipos de sonda \`mysql\`, \`dns\` e \`smtp\` (além de \`http\` e \`tcp\`) e passou a ler o agente (\`agente_cliente\`) e derivar as métricas (\`derivadas\`, \`derivadas_db\`), tudo em um único lote para \`POST /api/ingest\`.
+  2. Novo \`Memoria\` guarda a leitura anterior do agente e do MySQL, e as leituras do banco dos últimos 10 min (as taxas e o \`db.crescimento_mb_dia\` precisam de duas leituras). Em \`--uma-vez\` não há leitura anterior, então só saem os valores instantâneos.
+  3. Novo \`dominio/derivadas_db.py\`: \`db.qps\`, \`db.rollbacks_s\`, \`db.conexoes_abortadas\`, \`db.slow_queries_min\`, \`db.conexoes\`, \`db.conexoes_executando\`, \`db.threads_cache\`, \`db.uso_conexoes_pct\`, \`db.tamanho_mb\`, \`db.crescimento_mb_dia\` (exige ≥ 60 s de histórico, comparando com a leitura mais antiga dos últimos 10 min, para o tamanho não oscilar por páginas de 16 KB).
+  4. \`config/servicos.toml\`: \`db\` = \`mysql\`, \`dns\` = \`dns\`, \`smtp\` = \`smtp\`; \`agente_url\` comentado até o agente (P1) estar no ar.
+- **Por quê:** até aqui as sondas de banco, DNS e SMTP só viam a porta, e o agente não era lido.
+- **Arquivos:** \`plataforma/infra/coletor.py\`, \`plataforma/dominio/derivadas_db.py\`, \`config/servicos.toml\`, \`tests/test_coletor.py\`, \`tests/test_derivadas_db.py\`.
+- **Variáveis novas no \`.env\` (sem valor no repositório):** \`MONITOR_DB_SENHA\` (obrigatória para o tipo \`mysql\`), \`MONITOR_DB_USUARIO\` (padrão \`monitor\`), \`MONITOR_DNS_CONSULTA\` (padrão \`teste.lab.local\`), \`MONITOR_AGENTE_URL\` (ou \`agente_url\` no toml) e \`MONITOR_AGENTE_TOKEN\` (obrigatória quando o agente está configurado).
+- **Comportamento em falha:** agente fora do ar → mensagem em stderr e só as métricas do agente são omitidas; banco fora do ar → só \`db.disponivel\` e \`db.latencia_ms\`, e essa leitura não vira referência; senha ou token ausentes → erro explícito (não finge que o serviço caiu).
+- **Verificação:** \`pytest\` (cópia do repositório) → 68 passed, 1 skipped (dashboard, sem streamlit aqui), 3 de 3 vezes; \`tests/test_termometro.py\` continua verde. Ponta a ponta: API + Coletor reais contra web, DNS, SMTP e agente falsos, banco fora do ar → \`db\` CRITICO, os outros OK, \`host.cpu_pct\` e \`web.latencia_p95_ms\` gravados. Mutações no código (banco caído virando referência, falha da sonda DNS ignorada, janela de crescimento, leitura do agente não guardada, senha ausente aceita, exceção do agente, agente sem configuração, sonda errada por tipo, histórico mínimo, taxa por minuto) → todas acusadas.
+- **Pendências / riscos:** não testado contra MariaDB, Unbound e Postfix reais (rodar \`MONITOR_INFRA=1 pytest tests/test_infra.py\` e \`python -m plataforma.infra.coletor --uma-vez\` no WSL); porta e formato do agente a confirmar com P1; \`tests/test_infra.py\` não foi visto e pode ler \`servicos.toml\`.
+EOF
+
+## 2026-11-21 19:00 — Regras de alerta de todas as métricas (P2, tarefa 5)
+- **Quem:** Luiz (P2)
+- **O que mudou:** `config/regras.toml` passou de 6 para 40 regras (web, banco, DNS, SMTP e host). Só 5 métricas ficaram sem regra de propósito (`web.rps`, `web.req_4xx`, `web.req_5xx`, `db.conexoes`, `db.threads_cache`): são contagens ou volume, tratados por outra regra ou pela detecção de DDoS. `db.crescimento_mb_dia` usa `subir = 3`.
+- **Por quê:** o esqueleto só alertava disponibilidade e latência de web e DNS.
+- **Arquivos:** `config/regras.toml`, `tests/test_regras.py`.
+- **Verificação:** `pytest tests/test_regras.py` → 10 passed. Sabotagens acusadas: regra removida (a métrica precisa ter regra ou estar na lista de informativas do teste), limite crítico invertido, operador inválido, campo desconhecido no TOML. `test_termometro.py` continua verde.
+- **Pendências / riscos:** **os limites são propostas iniciais** (não tive a seção 8 da arquitetura original): conferir com o grupo e recalibrar com a linha de base real. Com os dados de exemplo do agente, `web.taxa_erro_5xx_pct` (3,3 %) e `smtp.taxa_entrega_pct` (92,3 %) já passam de ATENÇÃO.
+
+## 2026-11-21 19:00 — Segurança: DDoS, força bruta e alteração de configuração (P2, tarefa 6)
+- **Quem:** Luiz (P2)
+- **O que mudou:**
+  1. `dominio/seguranca.py`: escore z de `web.rps` e `dns.qps` contra a última hora (z ≥ 3 ATENÇÃO, z ≥ 5 CRÍTICO; mínimo de 20 amostras; piso de desvio 5), falhas de login por IP em 60 s (5 = ATENÇÃO, 20 = CRÍTICO) e hash diferente da linha de base (CRÍTICO).
+  2. API: `POST /api/seguranca/leitura` (X-Token; recebe `auth` e `hashes` do agente), `POST /api/seguranca/linha-base` (X-Token), `GET /api/seguranca`; no `POST /api/ingest` o DDoS é avaliado antes das regras de alerta. Eventos gravam em `evento_seguranca` e saem por e-mail pelo notificador.
+  3. Sem repetição: o aviso só se repete se o nível subir ou após 5 min; alteração de arquivo avisa uma vez por mudança de hash.
+  4. `infra/banco.py`: tabelas `tentativa_login` e `hash_arquivo` e métodos novos (só acréscimos; `CREATE TABLE IF NOT EXISTS`, bancos existentes se atualizam sozinhos). `infra/notificador.py`: linha `Detalhe:` opcional no e-mail. `infra/coletor.py`: repassa `auth` e `hashes` do agente à API depois de cada lote (uma vez por leitura).
+- **Por quê:** o pedido P2 tarefa 6; o contrato do lote (`amostras`) não carrega login nem hashes, por isso a rota nova de leitura.
+- **Arquivos:** `plataforma/dominio/seguranca.py`, `plataforma/api/app.py`, `plataforma/infra/banco.py`, `plataforma/infra/notificador.py`, `plataforma/infra/coletor.py`, `tests/test_seguranca.py`, `tests/test_api_seguranca.py`, `tests/test_coletor.py`.
+- **Verificação:** `pytest` (cópia do repositório) → 155 passed, 1 skipped, 3 de 3 vezes. Mutações no código (limites, queda tratada como DDoS, hash igual, nível não sobe, token removido nas duas rotas, janela de 60 s, ponto atual no próprio histórico, cooldown, deduplicação de configuração, filtro de sucesso, origem no SQL, leitura reenviada) → todas acusadas. Ponta a ponta com API e Coletor reais: leitura do agente chega, linha de base grava o hash.
+- **Pendências / riscos:** a rota nova e a mudança do Coletor são acréscimos ao combinado (as rotas existentes não mudaram); avisar P1 e P3. Premissas sobre o agente a confirmar com P1: `auth` traz só tentativas novas (se repetir, as falhas contam em dobro) e os relógios do agente e da plataforma estão sincronizados. Tipo `VULNERABILIDADE` não implementado. `HOST` pode aparecer em `/api/status` quando o agente manda `host.*`: o dashboard (P3) deve prever o serviço extra. `tentativa_login` não tem limpeza.
+
+## 2026-11-21 19:00 — Arquitetura final e playbooks (P2, tarefa 7)
+- **Quem:** Luiz (P2)
+- **O que mudou:** `docs/arquitetura.md` (visões de implantação, camadas e ciclo com diagramas Mermaid, catálogo de métricas e limites gerados a partir do contrato e do `regras.toml`, API, alertas, segurança, modelo de dados, configuração, limitações) e 11 playbooks em `docs/playbooks/` (serviço fora do ar, latência, erros HTTP, banco conexões, banco crescimento, DNS, SMTP, recursos da máquina, DDoS, força bruta, configuração alterada), cada um com Sintoma, Diagnóstico e Ação, mais um índice.
+- **Por quê:** substituir o documento externo da 1ª versão por Markdown versionado, alinhado ao que foi implementado.
+- **Arquivos:** `docs/arquitetura.md`, `docs/playbooks/*.md`, `tests/test_docs.py`.
+- **Verificação:** `pytest tests/test_docs.py` → 17 passed: toda métrica com regra está na arquitetura e no playbook da sua linha do índice, todo playbook está no índice e tem as três seções, os limites de segurança batem com o código, os links entre playbooks existem. 8 sabotagens na documentação acusadas.
+- **Pendências / riscos:** aguardando revisão de P3. Os comandos dos playbooks não foram executados nos containers (conferir nomes de logs e caminhos no WSL). A arquitetura descreve o agente como combinado com P1; ajustar quando o agente real existir. Itens que não pude confirmar: limites de CPU/memória dos containers (vieram do LOG de 20/11) e se o dashboard já usa `/api/seguranca`.
