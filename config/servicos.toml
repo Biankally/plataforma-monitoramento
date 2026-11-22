@@ -1,8 +1,14 @@
 # Enderecos dos servicos vigiados (containers do servicos/docker-compose.yml).
 # Portas alternativas para nao conflitar com o XAMPP (80 e 3306) e com o Windows (53 e 25).
+# Tipos de sonda: http, tcp, mysql (SELECT 1 + contadores), dns (consulta A), smtp (banner + EHLO).
+# Segredos no .env: MONITOR_DB_SENHA (usuario "monitor"), MONITOR_AGENTE_TOKEN. Consulta DNS de teste:
+# MONITOR_DNS_CONSULTA (padrao teste.lab.local).
 [plataforma]
 api_url = "http://127.0.0.1:5000"
 intervalo_s = 15
+# Agente da VM-S (P1). Ligue quando ele estiver no ar; o token vem do .env (MONITOR_AGENTE_TOKEN).
+# Tambem pode ser definido por MONITOR_AGENTE_URL. Sem isto o Coletor mede so com as sondas.
+# agente_url = "http://127.0.0.1:9100"
 
 [[servico]]
 nome = "web"
@@ -11,18 +17,18 @@ url = "http://127.0.0.1:8080/"
 
 [[servico]]
 nome = "db"
-tipo = "tcp"
+tipo = "mysql"
 host = "127.0.0.1"
 porta = 3307
 
 [[servico]]
 nome = "dns"
-tipo = "tcp"
+tipo = "dns"
 host = "127.0.0.1"
 porta = 1053
 
 [[servico]]
 nome = "smtp"
-tipo = "tcp"
+tipo = "smtp"
 host = "127.0.0.1"
 porta = 2525
