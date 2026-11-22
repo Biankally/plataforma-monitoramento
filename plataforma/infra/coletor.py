@@ -33,6 +33,7 @@ class Memoria:
     agente: dict | None = None                 # ultima leitura boa do agente
     db_anterior: dict | None = None            # ultima leitura boa do MySQL
     db_historico: list[dict] = field(default_factory=list)  # leituras boas dentro da janela
+    seguranca: dict | None = None              # login e hashes do agente, ainda nao enviados a API
 
 
 def _exigir_env(nome: str) -> str:
@@ -88,6 +89,14 @@ def _agente_configurado() -> tuple[str, str] | None:
     return url, _exigir_env("MONITOR_AGENTE_TOKEN")
 
 
+def _leitura_de_seguranca(agente: dict) -> dict | None:
+    """O pedaco da leitura do agente que a API avalia como seguranca: `auth` (login) e `hashes` (arquivos)."""
+    leitura: dict = {"ts": agente.get("ts"), "auth": agente.get("auth", [])}
+    if "hashes" in agente:
+        leitura["hashes"] = agente["hashes"]
+    return leitura if isinstance(leitura["ts"], int) else None
+
+
 def _amostras_agente(memoria: Memoria, falhas_sonda_dns: int) -> list[dict]:
     cfg = _agente_configurado()
     if cfg is None:
@@ -99,6 +108,7 @@ def _amostras_agente(memoria: Memoria, falhas_sonda_dns: int) -> list[dict]:
         return []
     amostras = derivar(atual, memoria.agente, falhas_sonda_dns=falhas_sonda_dns)
     memoria.agente = atual
+    memoria.seguranca = _leitura_de_seguranca(atual)
     return _de_amostras(amostras)
 
 
@@ -124,8 +134,18 @@ def enviar(lote: dict, api_url: str, token: str) -> None:
     r.raise_for_status()
 
 
+def enviar_seguranca(leitura: dict, api_url: str, token: str) -> None:
+    r = requests.post(f"{api_url}/api/seguranca/leitura", json=leitura, headers={"X-Token": token}, timeout=10)
+    r.raise_for_status()
+
+
 def ciclo(api_url: str, token: str, memoria: Memoria | None = None) -> None:
+    if memoria is None:
+        memoria = Memoria()
     enviar(montar_lote(int(time.time()), memoria), api_url, token)
+    if memoria.seguranca is not None:
+        leitura, memoria.seguranca = memoria.seguranca, None  # uma leitura do agente so e enviada uma vez
+        enviar_seguranca(leitura, api_url, token)
 
 
 def main(argv: list[str] | None = None) -> int:
