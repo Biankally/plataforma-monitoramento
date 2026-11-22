@@ -1,5 +1,10 @@
 # Limites iniciais de projeto (recalibrar com a linha de base medida nos testes).
 # operador ">" = alerta acima do limite; "<" = alerta abaixo.
+# Quem sobe de nivel precisa de 2 amostras seguidas; quem desce, de 3 (ver dominio/alertas.py).
+# Metricas sem regra (so informativas) estao listadas em tests/test_regras.py.
+
+# ---------------------------------------------------------------- Disponibilidade
+# Primeira falha = ATENCAO, segunda seguida = CRITICO.
 
 ["web.disponivel"]
 operador = "<"
@@ -25,12 +30,127 @@ atencao = 1
 critico = 1
 atencao_imediata = true
 
+# ---------------------------------------------------------------- Servidor web
+
 ["web.latencia_ms"]
 operador = ">"
 atencao = 500
 critico = 2000
 
+["web.latencia_p95_ms"]
+operador = ">"
+atencao = 800
+critico = 3000
+
+["web.taxa_erro_4xx_pct"]
+operador = ">"
+atencao = 20
+critico = 50
+
+["web.taxa_erro_5xx_pct"]
+operador = ">"
+atencao = 1
+critico = 5
+
+["web.conexoes_ativas"]
+operador = ">"
+atencao = 100
+critico = 150
+
+# ---------------------------------------------------------------- Banco de dados
+
+["db.latencia_ms"]
+operador = ">"
+atencao = 200
+critico = 1000
+
+["db.rollbacks_s"]
+operador = ">"
+atencao = 1
+critico = 5
+
+["db.conexoes_abortadas"]
+operador = ">"
+atencao = 5
+critico = 20
+
+["db.conexoes_executando"]
+operador = ">"
+atencao = 20
+critico = 50
+
+["db.uso_conexoes_pct"]
+operador = ">"
+atencao = 70
+critico = 90
+
+["db.tamanho_mb"]
+operador = ">"
+atencao = 500
+critico = 1000
+
+["db.crescimento_mb_dia"]
+operador = ">"
+atencao = 100
+critico = 500
+
+["db.slow_queries_min"]
+operador = ">"
+atencao = 5
+critico = 30
+
+# ---------------------------------------------------------------- DNS
+
 ["dns.latencia_ms"]
 operador = ">"
 atencao = 100
 critico = 500
+
+["dns.taxa_erro_pct"]
+operador = ">"
+atencao = 5
+critico = 20
+
+# ---------------------------------------------------------------- SMTP
+
+["smtp.latencia_ms"]
+operador = ">"
+atencao = 1000
+critico = 5000
+
+["smtp.taxa_entrega_pct"]
+operador = "<"
+atencao = 95
+critico = 80
+
+["smtp.fila"]
+operador = ">"
+atencao = 50
+critico = 200
+
+["smtp.latencia_envio_s"]
+operador = ">"
+atencao = 5
+critico = 30
+
+["smtp.taxa_erro_pct"]
+operador = ">"
+atencao = 5
+critico = 20
+
+# ---------------------------------------------------------------- Maquina / containers
+
+["host.cpu_pct"]
+operador = ">"
+atencao = 80
+critico = 95
+
+["host.mem_pct"]
+operador = ">"
+atencao = 80
+critico = 95
+
+["host.disco_latencia_ms"]
+operador = ">"
+atencao = 20
+critico = 100

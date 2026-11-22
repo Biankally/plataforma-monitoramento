@@ -10,13 +10,13 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 - [ ] Front-end responsivo com dashboard **por serviço** — `plataforma/dashboard/`
 - [ ] Front-end com **visão consolidada** (todos os serviços) — `plataforma/dashboard/`
-- [ ] Backend de **ingestão** de métricas — `plataforma/api/app.py`
-- [ ] **Armazenamento** de métricas — `plataforma/infra/banco.py`
-- [ ] Regras de alerta — `plataforma/dominio/alertas.py`, `config/regras.toml`
-- [ ] Canal de notificação por **e-mail** — `plataforma/infra/notificador.py`
-- [ ] Documentação: **arquitetura** — `docs/arquitetura.md`
+- [x] Backend de **ingestão** de métricas — `plataforma/api/app.py`
+- [x] **Armazenamento** de métricas — `plataforma/infra/banco.py`
+- [x] Regras de alerta — `plataforma/dominio/alertas.py`, `config/regras.toml`
+- [x] Canal de notificação por **e-mail** — `plataforma/infra/notificador.py`
+- [x] Documentação: **arquitetura** — `docs/arquitetura.md`
 - [ ] Documentação: **runbooks** — `docs/runbooks/`
-- [ ] Documentação: **playbooks de incidentes** — `docs/playbooks/`
+- [x] Documentação: **playbooks de incidentes** — `docs/playbooks/`
 - [ ] Documentação: **guia de instalação** — `docs/guia-instalacao.md`
 - [ ] **Testes** de navegação e uso da plataforma — `testes/`
 - [ ] Documento final em **PDF (ABNT)** — `relatorio/`
@@ -25,57 +25,57 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 ## 2. Requisitos passados em sala (quadro)
 
 - [ ] Plataforma em **VM própria** (VM-P); serviços em **containers isolados** na VM-S — `docs/arquitetura.md`
-- [ ] Coleta por **telemetria**: plataforma → serviços — `plataforma/infra/coletor.py`
+- [x] Coleta por **telemetria**: plataforma → serviços — `plataforma/infra/coletor.py`
 - [ ] Banco de dados: MySQL, SQLite ou PostgreSQL — `servicos/banco/`
 - [ ] Aplicação **web vulnerável em PHP** (site Receitas Práticas) — `servicos/web-vuln/`
 - [ ] DNS com **Unbound ou BIND** — `servicos/dns/`
 - [ ] SMTP com **Postfix** — `servicos/smtp/`
-- [ ] **Arquitetura** bem documentada (ênfase da professora) — `docs/arquitetura.md`
+- [x] **Arquitetura** bem documentada (ênfase da professora) — `docs/arquitetura.md`
 - [ ] **URL do repositório Git** incluída no documento — `relatorio/`
 
 ## 3. Métricas por serviço (enunciado, seção 3)
 
 ### 3.1 Web Server (HTTP/HTTPS)
-- [ ] Disponibilidade (UP/DOWN, ping/HTTP status check)
-- [ ] Requests por segundo (RPS)
-- [ ] Latência (ms)
-- [ ] Taxa de erro (4xx, 5xx) e contagem de códigos de erro
-- [ ] Número de conexões ativas
+- [x] Disponibilidade (UP/DOWN, ping/HTTP status check)
+- [x] Requests por segundo (RPS)
+- [x] Latência (ms)
+- [x] Taxa de erro (4xx, 5xx) e contagem de códigos de erro
+- [x] Número de conexões ativas
 
 ### 3.2 Banco de Dados
-- [ ] Disponibilidade
-- [ ] QPS (queries por segundo)
-- [ ] Taxa de erros / rollback / transaction failures
-- [ ] Número de conexões abertas e pools
+- [x] Disponibilidade
+- [x] QPS (queries por segundo)
+- [x] Taxa de erros / rollback / transaction failures
+- [x] Número de conexões abertas e pools
 - [ ] Uso de CPU, memória, I/O e latência de disco
-- [ ] Tamanho do banco e crescimento (GB/dia)
-- [ ] Número de slow queries
+- [x] Tamanho do banco e crescimento (GB/dia)
+- [x] Número de slow queries
 
 ### 3.3 DNS
-- [ ] Tempo de resposta de resolução (ms)
-- [ ] Taxa de erros / failed resolutions
-- [ ] Queries por segundo
-- [ ] Disponibilidade do servidor de domínio
+- [x] Tempo de resposta de resolução (ms)
+- [x] Taxa de erros / failed resolutions
+- [x] Queries por segundo
+- [x] Disponibilidade do servidor de domínio
 
 ### 3.4 SMTP
-- [ ] Taxa de entrega
-- [ ] Tamanho da fila de e-mails (queue length / backlog)
-- [ ] Latência de envio
-- [ ] Taxa de erros (rejeições, timeouts)
-- [ ] Volume de e-mails por minuto/hora
+- [x] Taxa de entrega
+- [x] Tamanho da fila de e-mails (queue length / backlog)
+- [x] Latência de envio
+- [x] Taxa de erros (rejeições, timeouts)
+- [x] Volume de e-mails por minuto/hora
 
 ## 4. Níveis de alerta (enunciado, seção 4)
 
-- [ ] Nível 1 — **Verde** (OK): estado normal
-- [ ] Nível 2 — **Amarelo** (Atenção): degradação + notificação por e-mail
-- [ ] Nível 3 — **Vermelho** (Crítico): degradado/indisponível + notificação **imediata** por e-mail
-- [ ] Limites (thresholds) de cada métrica documentados — `docs/arquitetura.md`
+- [x] Nível 1 — **Verde** (OK): estado normal
+- [x] Nível 2 — **Amarelo** (Atenção): degradação + notificação por e-mail
+- [x] Nível 3 — **Vermelho** (Crítico): degradado/indisponível + notificação **imediata** por e-mail
+- [x] Limites (thresholds) de cada métrica documentados — `docs/arquitetura.md`
 
 ## 5. Segurança e monitoramentos extras (enunciado, seção 5)
 
-- [ ] Detecção de **anomalias de tráfego** (picos, indicadores de DDoS) — `plataforma/dominio/seguranca.py`
-- [ ] Detecção de **falhas de autenticação** (logins falhos por conta/IP, brute-force) — `plataforma/dominio/seguranca.py`
-- [ ] Alerta de **alteração de arquivos de configuração** — `plataforma/dominio/seguranca.py`
+- [x] Detecção de **anomalias de tráfego** (picos, indicadores de DDoS) — `plataforma/dominio/seguranca.py`
+- [x] Detecção de **falhas de autenticação** (logins falhos por conta/IP, brute-force) — `plataforma/dominio/seguranca.py`
+- [x] Alerta de **alteração de arquivos de configuração** — `plataforma/dominio/seguranca.py`
 - [ ] Monitoramento de **vulnerabilidade conhecida por serviço** — `plataforma/dominio/seguranca.py`
 
 ## 6. Testes (evidências para o documento)
