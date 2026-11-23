@@ -40,6 +40,8 @@ METRICAS: dict[str, tuple[str, str]] = {
     "db.tamanho_mb": ("MB", "data_length + index_length"),
     "db.crescimento_mb_dia": ("MB/dia", "Crescimento projetado para 24 h"),
     "db.slow_queries_min": ("consultas/min", "Diferenca de Slow_queries por minuto"),
+    "db.cpu_pct": ("%", "Uso de CPU do container do banco (docker stats)"),
+    "db.mem_pct": ("%", "Uso de memoria do container do banco sobre o limite (docker stats)"),
     # DNS
     "dns.disponivel": ("0/1", "Resposta valida em ate 2 s"),
     "dns.latencia_ms": ("ms", "Tempo de resolucao da consulta de teste"),

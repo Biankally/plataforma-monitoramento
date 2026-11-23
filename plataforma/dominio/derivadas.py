@@ -1,7 +1,7 @@
 """Do JSON do agente para amostras do catalogo (camada 1, Python puro).
 
 Recebe a leitura atual e a anterior do agente e devolve as amostras `web.*`,
-`dns.*`, `smtp.*` e `host.*`. Regra de ouro: metrica que nao da para calcular
+`dns.*`, `smtp.*`, `host.*` e `db.cpu_pct`/`db.mem_pct`. Regra de ouro: metrica que nao da para calcular
 (secao ausente, sem leitura anterior, contador que diminuiu, divisao por zero)
 e OMITIDA. Nunca se inventa valor.
 
@@ -122,6 +122,13 @@ def derivar(atual: dict, anterior: dict | None, falhas_sonda_dns: int = 0) -> li
         saida["smtp.latencia_envio_s"] = delay
     if enviados is not None and intervalo and intervalo > 0:
         saida["smtp.emails_min"] = enviados / (intervalo / 60)
+
+    # ---- banco: CPU e memoria do container (enunciado 3.2; o resto do db.* vem da sonda MySQL)
+    containers = atual.get("containers")
+    db = containers.get("db") if isinstance(containers, dict) else None
+    for chave in ("cpu_pct", "mem_pct"):
+        if (v := _num(db, chave)) is not None:
+            saida[f"db.{chave}"] = v
 
     # ---- host
     host = atual.get("host")

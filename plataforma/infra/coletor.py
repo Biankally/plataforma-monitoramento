@@ -90,10 +90,12 @@ def _agente_configurado() -> tuple[str, str] | None:
 
 
 def _leitura_de_seguranca(agente: dict) -> dict | None:
-    """O pedaco da leitura do agente que a API avalia como seguranca: `auth` (login) e `hashes` (arquivos)."""
+    """O pedaco da leitura do agente que a API avalia como seguranca: `auth`, `hashes` e `versoes`."""
     leitura: dict = {"ts": agente.get("ts"), "auth": agente.get("auth", [])}
     if "hashes" in agente:
         leitura["hashes"] = agente["hashes"]
+    if "versoes" in agente:
+        leitura["versoes"] = agente["versoes"]   # vulnerabilidade conhecida por servico
     return leitura if isinstance(leitura["ts"], int) else None
 
 

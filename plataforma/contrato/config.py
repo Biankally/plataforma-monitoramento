@@ -65,3 +65,10 @@ def plataforma() -> dict:
 
 def regras_alerta() -> dict[str, dict]:
     return ler_toml("regras.toml")
+
+
+def vulnerabilidades_conhecidas() -> list[dict]:
+    """Lista de CVEs de config/vulnerabilidades.toml (vazia se o arquivo nao existir)."""
+    if not (pasta_config() / "vulnerabilidades.toml").is_file():
+        return []
+    return list(ler_toml("vulnerabilidades.toml").get("vulnerabilidade", []))

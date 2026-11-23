@@ -16,7 +16,7 @@ from flask import Flask, jsonify, request
 
 from plataforma.contrato import config
 from plataforma.contrato.metricas import SEM_DADOS, ErroContrato, servico_da_metrica, validar_lote
-from plataforma.dominio import seguranca
+from plataforma.dominio import seguranca, vulnerabilidades
 from plataforma.dominio.alertas import avaliar, pior_nivel, regra_de_dict
 from plataforma.infra import notificador
 from plataforma.infra.banco import Banco
@@ -51,11 +51,25 @@ def _validar_leitura_seguranca(dados: object) -> tuple[int, list[dict], dict[str
     return ts, auth, hashes
 
 
+def _validar_versoes(dados: dict) -> dict | None:
+    """Campo opcional `versoes` da leitura: {servico: {programa: versao (texto) ou null}}."""
+    versoes = dados.get("versoes")
+    if versoes is None:
+        return None
+    if not isinstance(versoes, dict) or not all(
+            isinstance(s, str) and isinstance(p, dict) and all(
+                isinstance(nome, str) and (v is None or isinstance(v, str)) for nome, v in p.items())
+            for s, p in versoes.items()):
+        raise ErroContrato("'versoes' precisa ser {servico: {programa: versao em texto ou null}}")
+    return versoes
+
+
 def criar_app(caminho_banco: Path, token: str) -> Flask:
     app = Flask(__name__)
     banco = Banco(caminho_banco)
     regras = {m: regra_de_dict(m, d) for m, d in config.regras_alerta().items()}
     servicos = [s.nome for s in config.servicos_monitorados()]
+    catalogo_cves = config.vulnerabilidades_conhecidas()
 
     def _avisar(evento: seguranca.EventoSeguranca, ts: int) -> None:
         """Grava o evento e manda o e-mail (a falha do e-mail e registrada, o evento fica gravado)."""
@@ -154,7 +168,9 @@ def criar_app(caminho_banco: Path, token: str) -> Flask:
         if request.headers.get("X-Token") != token:
             return jsonify(erro="token ausente ou invalido"), 401
         try:
-            ts, auth, hashes = _validar_leitura_seguranca(request.get_json(silent=True))
+            corpo = request.get_json(silent=True)
+            ts, auth, hashes = _validar_leitura_seguranca(corpo)
+            versoes = _validar_versoes(corpo)
         except ErroContrato as erro:
             return jsonify(erro=str(erro)), 400
 
@@ -168,6 +184,10 @@ def criar_app(caminho_banco: Path, token: str) -> Flask:
             banco.salvar_hashes(ts, hashes)
             for evento in seguranca.avaliar_hashes(hashes, banco.linha_base()):
                 novos += _avisar_config_nova(evento, ts)
+        if versoes is not None:
+            banco.salvar_versoes(ts, versoes)
+            for evento in vulnerabilidades.avaliar_versoes(versoes, catalogo_cves):
+                novos += _avisar_config_nova(evento, ts)   # mesma regra: avisa uma vez por falha encontrada
         return jsonify(eventos=novos), 201
 
     @app.post("/api/seguranca/linha-base")
@@ -186,7 +206,8 @@ def criar_app(caminho_banco: Path, token: str) -> Flask:
             limite = int(request.args.get("limite", 50))
         except ValueError:
             return jsonify(erro="'limite' precisa ser inteiro"), 400
-        return jsonify(eventos=banco.eventos_seguranca(limite), linha_base=banco.linha_base_detalhada())
+        return jsonify(eventos=banco.eventos_seguranca(limite), linha_base=banco.linha_base_detalhada(),
+                       versoes=banco.versoes())
 
     @app.get("/api/saude")
     def saude():

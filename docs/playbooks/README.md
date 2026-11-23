@@ -13,10 +13,11 @@ abreviação usada: `dc` = `docker compose -f servicos/docker-compose.yml`.
 | Banco: crescimento | `db.tamanho_mb`, `db.crescimento_mb_dia` | [banco-crescimento.md](banco-crescimento.md) |
 | DNS: erros e volume | `dns.taxa_erro_pct`, `dns.qps` | [dns-erros-e-volume.md](dns-erros-e-volume.md) |
 | SMTP: fila e entrega | `smtp.taxa_entrega_pct`, `smtp.fila`, `smtp.latencia_envio_s`, `smtp.rejeicoes`, `smtp.timeouts`, `smtp.taxa_erro_pct`, `smtp.emails_min` | [smtp-fila-e-entrega.md](smtp-fila-e-entrega.md) |
-| Recursos da máquina | `host.cpu_pct`, `host.mem_pct`, `host.disco_io_kbs`, `host.disco_latencia_ms` | [host-recursos.md](host-recursos.md) |
+| Recursos da máquina | `host.cpu_pct`, `host.mem_pct`, `host.disco_io_kbs`, `host.disco_latencia_ms`, `db.cpu_pct`, `db.mem_pct` | [host-recursos.md](host-recursos.md) |
 | Segurança: DDoS | evento `TRAFEGO` (`web.rps`, `dns.qps`) | [seguranca-ddos.md](seguranca-ddos.md) |
 | Segurança: força bruta | evento `AUTENTICACAO` | [seguranca-forca-bruta.md](seguranca-forca-bruta.md) |
 | Segurança: configuração alterada | evento `CONFIGURACAO` | [seguranca-configuracao-alterada.md](seguranca-configuracao-alterada.md) |
+| Segurança: vulnerabilidade conhecida | evento `VULNERABILIDADE` | [seguranca-vulnerabilidade.md](seguranca-vulnerabilidade.md) |
 
 Níveis: **ATENÇÃO** = vale olhar logo; **CRÍTICO** = usuário já é afetado ou o risco é imediato. Os limites exatos estão em
 `config/regras.toml` e na seção 5 de `docs/arquitetura.md`. Depois de resolver, o alerta volta a OK sozinho quando a

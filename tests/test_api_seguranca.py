@@ -216,3 +216,26 @@ def test_sabotagem_o_ponto_atual_nao_entra_no_proprio_historico(cli):
     enviar(cli, T0 + 30 * 15, 39.0)
     (ev,) = eventos(cli)
     assert ev["nivel"] == "ATENCAO" and "z = 4.8" in ev["detalhe"]
+
+
+# ---------- vulnerabilidade conhecida por servico ----------
+
+def test_versao_vulneravel_gera_evento_uma_vez_e_aparece_na_consulta(cli):
+    versoes = {"dns": {"unbound": "1.20.0"}, "web": {"apache": "2.4.65"}}
+    r = cli.post("/api/seguranca/leitura", json={"ts": T0, "auth": [], "versoes": versoes}, headers=H)
+    assert r.status_code == 201
+    vulns = [e for e in eventos(cli) if e["tipo"] == "VULNERABILIDADE"]
+    assert [e["servico"] for e in vulns] == ["dns"]
+    assert "CVE-2024-8508" in vulns[0]["detalhe"]
+    cli.post("/api/seguranca/leitura", json={"ts": T0 + 15, "auth": [], "versoes": versoes}, headers=H)
+    assert len([e for e in eventos(cli) if e["tipo"] == "VULNERABILIDADE"]) == 1, "o aviso nao pode repetir a cada ciclo"
+    dados = cli.get("/api/seguranca").get_json()
+    assert {"servico": "dns", "programa": "unbound", "versao": "1.20.0"} in [
+        {k: x[k] for k in ("servico", "programa", "versao")} for x in dados["versoes"]]
+    assert len(emails(cli)) == 1, "o evento tem que sair por e-mail (uma vez)"
+
+
+@pytest.mark.parametrize("versoes", [["1.0"], {"dns": "1.20.0"}, {"dns": {"unbound": 120}}])
+def test_sabotagem_versoes_fora_do_formato_da_400(cli, versoes):
+    r = cli.post("/api/seguranca/leitura", json={"ts": T0, "auth": [], "versoes": versoes}, headers=H)
+    assert r.status_code == 400

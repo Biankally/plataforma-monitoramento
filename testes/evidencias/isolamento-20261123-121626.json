@@ -1,0 +1,30 @@
+{
+  "quando": "2026-11-23T12:15:26",
+  "aprovado": true,
+  "servicos": {
+    "db": {
+      "ok": 46,
+      "total": 46,
+      "pior_ms": 203.4
+    },
+    "dns": {
+      "ok": 46,
+      "total": 46,
+      "pior_ms": 119.1
+    },
+    "smtp": {
+      "ok": 46,
+      "total": 46,
+      "pior_ms": 300.5
+    }
+  },
+  "ataque_web": {
+    "requisicoes": 42067,
+    "por_codigo": {
+      "200": 42067
+    },
+    "falhas": 0,
+    "segundos": 60.0,
+    "rps": 700.7
+  }
+}

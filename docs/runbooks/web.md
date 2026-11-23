@@ -2,7 +2,9 @@
 
 - **Container:** `monitoramento-web-1` · **Porta:** `127.0.0.1:8080` · **Limites:** 1 CPU, 512 MB, 200 processos
 - **Site:** `servicos/web-vuln/site/`, montado só leitura em `/var/www/html/receitas_práticas/`
-- **Logs:** `servicos/logs/web/login.log` (tentativas de login, JSON) e `servicos/logs/web/acesso.log` (`código tempo_us`)
+- **Logs:** `servicos/logs/web/login.log` e `servicos/logs/web/acesso.log`
+  - `login.log`: uma linha JSON por tentativa: `{"ts": 1795036790, "origem": "IP", "usuario": "email", "sucesso": false}`
+  - `acesso.log`: uma linha por requisição: `código tempo_em_microssegundos` (ex.: `200 1830`)
 
 Todos os comandos são rodados dentro de `servicos/`.
 
