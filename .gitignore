@@ -12,6 +12,7 @@ venv/
 
 # Dados e saidas locais
 dados/
+servicos/logs/
 notificacoes/
 *.db
 *.db-wal

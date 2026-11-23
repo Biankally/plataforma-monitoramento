@@ -207,3 +207,65 @@ EOF
 - **Arquivos:** `docs/arquitetura.md`, `docs/playbooks/*.md`, `tests/test_docs.py`.
 - **Verificação:** `pytest tests/test_docs.py` → 17 passed: toda métrica com regra está na arquitetura e no playbook da sua linha do índice, todo playbook está no índice e tem as três seções, os limites de segurança batem com o código, os links entre playbooks existem. 8 sabotagens na documentação acusadas.
 - **Pendências / riscos:** aguardando revisão de P3. Os comandos dos playbooks não foram executados nos containers (conferir nomes de logs e caminhos no WSL). A arquitetura descreve o agente como combinado com P1; ajustar quando o agente real existir. Itens que não pude confirmar: limites de CPU/memória dos containers (vieram do LOG de 20/11) e se o dashboard já usa `/api/seguranca`.
+
+## 2026-11-20 21:10 — Agente, DNS/SMTP conferidos, ataques, isolamento, guia e runbooks
+- **Quem:** Bia (P1, tarefas 4 a 8)
+- **O que mudou:**
+  1. **Agente** (`servicos/agente/`): servidor `http.server` em `127.0.0.1:9101`. `GET /metrics` com `X-Token` devolve as chaves de `tests/falsos/agente_exemplo.json`; sem token = 401. Roda no WSL (fora dos containers) e lê:
+     - Apache: `/server-status`;
+     - logs de acesso e login, incrementais, com guarda da posição e tratamento de rotação e de linha pela metade;
+     - Unbound: `unbound-control stats_noreset`;
+     - Postfix: `postqueue -j` e `docker logs`;
+     - `docker stats`, `/proc` e SHA-256 dos arquivos de configuração dentro dos containers.
+
+     Fonte fora do ar vira `null`, sem derrubar o agente. Semântica de cada campo (acumulado, janela ou foto) em `docs/runbooks/agente.md`.
+  2. **Logs do web** saem do volume escondido para a pasta `servicos/logs/web/` (fora do Git), para o agente ler. Novo log `acesso.log` com `código tempo_us` (`web-vuln/apache-log.conf`); o container acerta o dono da pasta na subida.
+  3. **DNS:** a construção para se faltar o `unbound-control`. **SMTP:** testes reais de entrega (`status=sent`) e fila.
+  4. **Ataques** (`testes/`): `ataque_ddos.py` (inundação HTTP), `ataque_brute_force.py` (lista de senhas fracas, com `--criar-vitima`) e `teste_isolamento.py` (DDoS no web enquanto sondas reais vigiam db, dns e smtp; grava a evidência em `testes/evidencias/`). Todos recusam alvo fora de 127.0.0.1 (`alvo_local.py`). No `pedido-p1.md`, o `ataque_ddos.sh` virou `.py`.
+  5. **Documentação:** `docs/guia-instalacao.md` (do zero, WSL + Docker Desktop) e `docs/runbooks/` (web, db, dns, smtp, agente, ataques).
+  6. `.env.exemplo` ganhou `AGENTE_TOKEN` e `AGENTE_URL`; `.gitignore` ganhou `servicos/logs/`.
+- **Por quê:** fechar a parte P1: a P2 precisa do agente para as métricas internas e a segurança; a regra da professora exige provar o isolamento.
+- **Arquivos:** `servicos/agente/*.py`, `servicos/web-vuln/Dockerfile`, `servicos/web-vuln/apache-log.conf`, `servicos/dns/Dockerfile`, `servicos/docker-compose.yml`, `testes/*.py`, `tests/test_agente.py`, `tests/test_ataques.py`, `tests/test_infra.py`, `tests/test_site.py`, `docs/guia-instalacao.md`, `docs/runbooks/*.md`, `docs/ia/pedido-p1.md`, `.env.exemplo`, `.gitignore`.
+- **Verificação (ambiente de validação):**
+  - Testes escritos antes do código (coleta falhou sem os módulos); depois: `tests/test_agente.py` → 13 passed; `tests/test_ataques.py` → 12 passed; `pytest` → 68 passed, 17 skipped.
+  - Fontes com serviços reais locais:
+    - Unbound real: `teste.lab.local` → 192.0.2.10, NXDOMAIN contado;
+    - Apache real com as duas `.conf`: `Syntax OK`, `/server-status` lido, `acesso.log` com `200 329` e `404 119`;
+    - `postqueue -j` e `sha256sum`: hash `null` para arquivo inexistente.
+  - Força bruta no site real (PHP + MariaDB): `ENTROU` na tentativa 29, com as linhas no `login.log`.
+  - Isolamento: DDoS de 5 s, ~960 req/s no site; db, dns e smtp 5/5; com a porta do db errada → reprovado.
+  - Sabotagens acusadas: tirar a checagem de rotação do log; aceitar qualquer token; devolver 0 em vez de `null` com o Unbound fora do ar; liberar alvo fora de 127.0.0.1.
+- **Integração com a P2 (PRs #4, #5 e #6 já na `main`):** o JSON real do agente passou por `agente_cliente.ler_metricas` → `derivadas.derivar` → `validar_lote` com 17 métricas aceitas; DNS fora do ar (`null`) → métricas `dns.*` omitidas, como combinado. `sonda_mysql` testada num MariaDB real com o usuário `monitor` (lê status, `max_connections` e tamanho; senha errada = fora do ar). Ajuste: `AGENTE_URL` no `.env.exemplo` sem `/metrics` (o cliente da P2 já acrescenta).
+- **Pendências / riscos:**
+  - Rodar no WSL: `MONITOR_INFRA=1 pytest tests/test_infra.py` (17 testes, incluindo agente, DNS, SMTP, hash e isolamento de 15 s).
+- **Verificação no WSL da Bia (20/11 16:01):** `pytest` → 68 passed, 17 skipped; `MONITOR_INFRA=1 pytest tests/test_infra.py` → 16 passed, 1 failed: `test_agente_le_os_containers_de_verdade` com `log_web.total = 0`.
+  - **Causa:** o site padrão da imagem (`000-default`, `<VirtualHost *:80>`) tem o próprio `CustomLog`, e então o `CustomLog` de fora é ignorado para as requisições dele.
+  - **Por que a validação local não pegou:** o Apache de teste ouvia na porta 8088 e o VirtualHost estava em `*:80`, então as requisições não passavam pelo VirtualHost. Isso foi um erro do meu teste.
+  - **Reproduzido** com o VirtualHost na mesma porta: 0 linhas com `CustomLog` e 1 linha com `GlobalLog`.
+  - **Correção:** `GlobalLog` em `servicos/web-vuln/apache-log.conf`.
+  - Avisar a P2: os campos `null` e a semântica "janela desde a leitura anterior" (`docs/runbooks/agente.md`) valem para o `agente_cliente.py` e as `derivadas.py`.
+  - A detecção (escore z, falhas por IP, linha de base de hash) é da P2, tarefa 6. A P1 entrega os dados e os ataques.
+
+## 2026-11-20 21:30 — Organização do repositório
+- **Quem:** Bia (P1)
+- **O que mudou:** `README.md` com a estrutura atual (agente, logs, ataques, guia) e os comandos para subir tudo; removidos os `.gitkeep` de `servicos/agente/`, `testes/` e `docs/runbooks/` (as pastas já têm arquivos).
+- **Por quê:** a professora vai avaliar a organização do Git.
+- **Arquivos:** `README.md`, `servicos/agente/.gitkeep`, `testes/.gitkeep`, `docs/runbooks/.gitkeep`.
+- **Verificação:** `git ls-files` sem `.gitkeep` em pasta com conteúdo; `pytest` verde.
+- **Pendências / riscos:** apagar as branches já mescladas; ligar "apagar branch depois do merge"; tags de marco (`v0.1.0` esqueleto, `v0.2.0` serviços + agente).
+
+## 2026-11-22 13:30 — Agente ligado ao coletor da P2 e envio da parte P1
+- **Quem:** Bia (P1)
+- **O que mudou:**
+  1. A branch `a/agente-ataques` (20/11) não tinha sido enviada. O mesmo conteúdo foi refeito sobre a `main` atual, já com os PRs #4 a #14 da P2, na branch `a/agente-final`.
+  2. Token do agente renomeado de `AGENTE_TOKEN` para `MONITOR_AGENTE_TOKEN`, e a URL para `MONITOR_AGENTE_URL`, que são os nomes que o coletor da P2 lê. O `.env.exemplo` ganhou `MONITOR_DB_SENHA` (a sonda do banco da P2 precisa dela; é a mesma senha do `servicos/.env`, e o guia mostra como copiar).
+  3. O agente faz as consultas ao Docker em paralelo (`ThreadPoolExecutor`): o coletor espera no máximo 5 s, e em série elas podiam passar disso durante um ataque.
+  4. `CHECKLIST.md`: marcados os itens da P1 (banco, site, DNS, SMTP, runbooks, guia).
+- **Por quê:** a parte P1 não estava no GitHub, e o agente precisava conversar com o coletor que a P2 já colocou na `main`.
+- **Arquivos:** os da entrada de 20/11 21:10, mais `servicos/agente/agente.py`, `servicos/agente/agente_fontes.py`, `tests/test_agente.py`, `.env.exemplo`, `docs/guia-instalacao.md`, `docs/runbooks/agente.md`, `CHECKLIST.md`.
+- **Verificação:** `pytest` sobre a `main` atual → 197 passed, 17 skipped. Teste novo: com cada comando do Docker levando 0,5 s, uma leitura leva menos de 2 s (em série seriam ~4,5 s); sabotagem (hashes com 1 thread) → acusada.
+- **Pendências / riscos:**
+  - Rodar `MONITOR_INFRA=1 pytest tests/test_infra.py` no WSL.
+  - O monitoramento de **vulnerabilidade conhecida por serviço** (enunciado, seção 5) ainda não tem dono: falta combinar no grupo.
+
+- **Verificação no WSL (23/11 12:04):** `pytest` → 197 passed; `MONITOR_INFRA=1` → 16 passed, 1 failed: o teste do db chamava a sonda sem ler o `.env`. Correção: `config.carregar_env()` em `tests/test_infra.py`.

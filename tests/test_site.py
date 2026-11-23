@@ -139,5 +139,5 @@ def test_compose_liga_site_ao_banco_sem_root():
     compose = (RAIZ / "servicos" / "docker-compose.yml").read_text(encoding="utf-8")
     assert "DB_HOST: db" in compose
     assert "./banco:/docker-entrypoint-initdb.d:ro" in compose
-    assert "web_logs:/var/log/app" in compose, "o log de login precisa ficar num volume (o agente le depois)"
+    assert "./logs/web:/var/log/app" in compose, "o log de login precisa ficar numa pasta que o agente le"
     assert not re.search(r"DB_USER:\s*root", compose)
