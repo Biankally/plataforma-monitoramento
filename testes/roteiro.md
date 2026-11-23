@@ -41,11 +41,11 @@ Responsável: P3 (Yuri). Revisão: P1 (Bianca) e P2 (Luiz).
 | T07 | Queda do banco, do DNS e do SMTP | Disponibilidade de cada serviço; níveis 2 e 3 | — |
 | T08 | Degradação de latência: ATENÇÃO | Nível 2 (degradação que exige observação) | — |
 | T09 | Recuperação: volta ao OK | Nível 1 (estado normal) | T06 ou T07 |
-| T10 | Pico de tráfego (DDoS) | Segurança: anomalias de tráfego | agente e `testes/ataque_ddos.sh` (P1) |
+| T10 | Pico de tráfego (DDoS) | Segurança: anomalias de tráfego | agente e `testes/ataque_ddos.py` (P1) |
 | T11 | Isolamento: ataque ao web não derruba os outros | Regra da professora (isolamento) | T10 |
 | T12 | Força bruta no login | Segurança: falhas de autenticação | agente e `testes/ataque_brute_force.py` (P1) |
 | T13 | Alteração de arquivo de configuração | Segurança: alteração de configuração | agente (P1) |
-| T14 | Varredura de vulnerabilidades | Segurança: vulnerabilidade conhecida por serviço | ferramenta a definir no grupo |
+| T14 | Vulnerabilidade conhecida por serviço | Segurança: vulnerabilidade conhecida por serviço | agente e `config/vulnerabilidades.toml` |
 | T15 | Proteção da API e dos segredos | Backend de ingestão; segurança do repositório | — |
 
 ## Casos
@@ -281,7 +281,7 @@ de `web.rps`).
 
 **Passos:**
 
-1. Do notebook, rodar `bash testes/ataque_ddos.sh` (script da P1, só contra o container web).
+1. No WSL, rodar `python testes/ataque_ddos.py` (script da P1, só contra o container web).
 2. Esperar 15 a 30 s e abrir Por serviço → WEB (gráfico de `web.rps`).
 3. Abrir a página Segurança.
 4. Parar o ataque.
@@ -364,31 +364,33 @@ linha de base; um e-mail.
 
 **Observações:**
 
-### T14 — Varredura de vulnerabilidades
+### T14 — Vulnerabilidade conhecida por serviço
 
-**Objetivo:** registrar as vulnerabilidades conhecidas de cada serviço vigiado.
+**Objetivo:** mostrar que a plataforma conhece a versão de cada programa e avisa quando ela tem falha publicada (CVE).
 
 **Requisito:** segurança — monitoramento de vulnerabilidade conhecida por serviço.
 
-**Pré-condições:** containers no ar; ferramenta de varredura instalada na VM (a definir no grupo, por exemplo
-`nmap -sV` para as versões dos serviços e `nikto` para o site).
+**Pré-condições:** containers, agente, API, Coletor e dashboard no ar (guia de instalação, seção 6).
 
 **Passos:**
 
-1. `nmap -sV -p 8080,3307,1053,2525 127.0.0.1` e salvar a saída.
-2. `nikto -h http://127.0.0.1:8080/` e salvar a saída.
-3. Comparar as versões encontradas com as vulnerabilidades conhecidas (CVE) e com as mantidas de propósito no site
-   (`docs/LOG.md`, 20/11: enumeração de usuários, login sem limite, XSS em `suaconta.php`, `display_errors` ligado).
+1. Esperar um ciclo do Coletor (15 s) e abrir o dashboard → **Segurança** → tabela "Versões dos programas".
+2. Conferir uma versão direto no container: `docker compose -f servicos/docker-compose.yml exec dns unbound -V`.
+3. Se alguma versão estiver na lista de `config/vulnerabilidades.toml`, conferir o evento `VULNERABILIDADE` na tabela
+   de eventos e o e-mail em `notificacoes/`.
+4. Demonstração com versão vulnerável (sem mexer nos containers): enviar uma leitura com uma versão antiga e ver o evento:
+   `curl -X POST -H "X-Token: $MONITOR_TOKEN" -H "Content-Type: application/json" -d '{"ts": '$(date +%s)', "auth": [], "versoes": {"smtp": {"postfix": "3.8.4"}}}' http://127.0.0.1:5000/api/seguranca/leitura`.
 
-**Resultado esperado:** relatório com a versão de cada serviço e as vulnerabilidades encontradas, incluindo as
-mantidas de propósito no site.
+**Resultado esperado:** passo 1 lista apache, php, mysql, unbound e postfix com a versão; passo 4 gera um evento
+`VULNERABILIDADE` (CVE-2023-51764) e um e-mail.
 
-**Evidência:** `testes/evidencias/T14-nmap.png` e `testes/evidencias/T14-nikto.png`.
+**Evidência:** `testes/evidencias/T14-versoes.png` e `testes/evidencias/T14-evento.png`.
 
 **Resultado:** [ ] Passou [ ] Falhou — data/hora: ____
 
-**Observações:** a plataforma ainda não gera eventos `VULNERABILIDADE` (`docs/arquitetura.md`, seção 8); responsável a
-definir no grupo.
+**Observações:** a comparação é por número de versão; uma distribuição pode corrigir sem trocar o número (falso
+positivo). Ver `docs/playbooks/seguranca-vulnerabilidade.md`. As vulnerabilidades mantidas de propósito no site
+(enumeração de usuários, login sem limite, XSS em `suaconta.php`, `display_errors`) estão no `docs/LOG.md`, 20/11.
 
 ### T15 — Proteção da API e dos segredos
 

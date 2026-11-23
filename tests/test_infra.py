@@ -186,6 +186,8 @@ def test_agente_le_os_containers_de_verdade(tmp_path):
     assert isinstance(dados["postfix"]["fila"], int), f"fila sem dado: {erros}"
     assert all(dados["containers"][n]["cpu_pct"] is not None for n in CONTAINERS), f"docker stats: {erros}"
     assert all(h is not None for h in dados["hashes"].values()), f"hash sem dado: {erros}"
+    versoes = {f"{s}/{p}": v for s, programas in dados["versoes"].items() for p, v in programas.items()}
+    assert all(versoes.values()), f"versao sem dado: {versoes} {erros}"
 
 
 @pytest.mark.skipif(shutil.which("docker") is None, reason="docker nao encontrado")

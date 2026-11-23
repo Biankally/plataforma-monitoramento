@@ -15,6 +15,7 @@
 | `containers` | `docker stats --no-stream` | foto do momento |
 | `host` | `/proc` do Linux | foto do momento (CPU e disco: média desde a leitura anterior) |
 | `hashes` | `docker exec ... sha256sum` dos arquivos de configuração | foto do momento |
+| `versoes` | `docker exec ...` (`apache2 -v`, `php`, `mysqld --version`, `unbound -V`, `postconf`) | foto, guardada por 10 min |
 
 - **Campo `null`:** a fonte não respondeu (container parado, por exemplo). O motivo aparece no terminal do agente.
 - **"Desde a leitura anterior":** só o coletor deve ler o `/metrics`. Uma leitura manual "rouba" as linhas da janela seguinte.

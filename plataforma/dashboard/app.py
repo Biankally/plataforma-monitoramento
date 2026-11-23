@@ -150,8 +150,9 @@ def pagina_seguranca() -> None:
         st.error(str(erro))
         return
     eventos, linha_base = dados["eventos"], dados["linha_base"]
-    st.caption("Escore z de tráfego (DDoS), falhas de login por IP em 60 s (força bruta) e hash de arquivos "
-               "de configuração comparado com a linha de base.")
+    st.caption("Escore z de tráfego (DDoS), falhas de login por IP em 60 s (força bruta), hash de arquivos "
+               "de configuração comparado com a linha de base e versão de cada programa comparada com a lista "
+               "de CVEs conhecidos (config/vulnerabilidades.toml).")
     for linha in em_linhas(list(TIPOS_SEGURANCA.items()), 2):
         for coluna, (tipo, nome) in zip(st.columns(2), linha):
             coluna.metric(nome, sum(e["tipo"] == tipo for e in eventos))
@@ -168,6 +169,16 @@ def pagina_seguranca() -> None:
         } for e in eventos], hide_index=True)
     else:
         st.info("Nenhum evento de segurança registrado.")
+
+    st.subheader("Versões dos programas (vulnerabilidade conhecida)")
+    versoes = dados.get("versoes") or []
+    if versoes:
+        com_falha = {e["origem"] for e in eventos if e["tipo"] == "VULNERABILIDADE"}
+        st.dataframe([{"Serviço": v["servico"].upper(), "Programa": v["programa"], "Versão": v["versao"],
+                       "CVE conhecido": "⚠️ sim" if f"{v['programa']} {v['versao']}" in com_falha else "não",
+                       "Lida em": formatos.hora(v["ts"])} for v in versoes], hide_index=True)
+    else:
+        st.info("Nenhuma versão recebida ainda (o agente envia a cada ciclo do coletor).")
 
     st.subheader("Linha de base dos arquivos de configuração")
     if linha_base:

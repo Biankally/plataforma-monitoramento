@@ -298,3 +298,48 @@ Modelo de entrada:
   - `pytest` → 200 passed, 15 skipped (os 15 precisam de Docker/PHP: `MONITOR_INFRA=1`). Camadas: o dashboard só importa `contrato` e o próprio `formatos`.
   - Tela conferida com API + dashboard reais e 1 h de dados de demonstração, a 1366 px (PC) e 390 px (celular).
 - **Pendências / riscos:** prints definitivos no PC e no celular (tarefa 2) saem na VM, com os serviços reais (tarefa 4). Os limites mostrados na ajuda vêm do `config/regras.toml` local do dashboard (é configuração, não dado; os dados continuam vindo só da API).
+- **Verificação no WSL (23/11 12:06):** `MONITOR_INFRA=1 pytest tests/test_infra.py` → 17 passed.
+
+## 2026-11-23 13:30 — Vulnerabilidade conhecida por serviço, CPU e memória do banco e revisão final da P1
+- **Quem:** Bia (P1)
+- **O que mudou:**
+  1. **Vulnerabilidade conhecida por serviço** (enunciado, seção 5; era o único item sem dono):
+     - o agente lê a versão de Apache, PHP, MySQL, Unbound e Postfix dentro dos containers, com cache de 10 min;
+     - novo campo `versoes` no JSON do agente (`tests/falsos/agente_exemplo.json`), repassado pelo Coletor em `POST /api/seguranca/leitura`;
+     - `config/vulnerabilidades.toml` lista 8 CVEs reais (Apache, PHP, MySQL, Unbound e Postfix), cada um com versão corrigida, nível e fonte oficial conferida em 23/11;
+     - `plataforma/dominio/vulnerabilidades.py` compara as versões levando em conta ramo e faixa e gera evento `VULNERABILIDADE`, uma vez por falha, com e-mail;
+     - a API guarda as versões (tabela `versao_programa`) e as devolve em `GET /api/seguranca`;
+     - o dashboard mostra a tabela de versões na página Segurança;
+     - novo playbook `seguranca-vulnerabilidade.md`, e o caso T14 do roteiro foi refeito.
+  2. **CPU e memória do banco** (enunciado, seção 3.2): métricas `db.cpu_pct` e `db.mem_pct`, vindas do `docker stats` do container `db`. O contrato ganhou essas duas métricas (proposta de 20/11). Regras: > 80/95 e > 85/95. I/O e latência de disco do banco são os do disco da máquina (`host.disco_*`); está registrado na arquitetura.
+  3. **Revisão final da P1**, que estava só na máquina da Bia:
+     - formato dos logs descrito no `docs/runbooks/web.md`;
+     - comentários reescritos;
+     - `README` com "regras de contribuição";
+     - evidência do teste de isolamento (60 s de DDoS, ~700 req/s; db, dns e smtp 46/46);
+     - teste de isolamento marcado na CHECKLIST;
+     - roteiro citando `python testes/ataque_ddos.py`.
+- **Por quê:** fechar os dois itens do enunciado que faltavam, conferidos item por item contra o PDF do enunciado.
+- **Ajustes em testes de outras partes (sem enfraquecer):**
+  - `test_derivadas`: o valor esperado ganhou `db.cpu_pct` e `db.mem_pct`, calculados à mão.
+  - `test_coletor`: a leitura de segurança passou a incluir `versoes`.
+  - No banco fora do ar, `db.cpu_pct` e `db.mem_pct` (que vêm do agente) continuam válidos.
+- **Arquivos:**
+  - código: `config/vulnerabilidades.toml`, `config/regras.toml`, `plataforma/contrato/config.py`, `plataforma/contrato/metricas.py`, `plataforma/dominio/vulnerabilidades.py`, `plataforma/dominio/derivadas.py`, `plataforma/api/app.py`, `plataforma/infra/banco.py`, `plataforma/infra/coletor.py`, `plataforma/dashboard/app.py`, `servicos/agente/agente.py`, `servicos/agente/agente_fontes.py`, `servicos/web-vuln/site/login/registro_login.php`;
+  - testes: `tests/test_vulnerabilidades.py`, `tests/test_api_seguranca.py`, `tests/test_agente.py`, `tests/test_derivadas.py`, `tests/test_coletor.py`, `tests/test_dashboard.py`, `tests/test_infra.py`, `tests/test_site.py`, `tests/falsos/agente_exemplo.json`;
+  - documentação: `docs/arquitetura.md`, `docs/playbooks/README.md`, `docs/playbooks/seguranca-vulnerabilidade.md`, `docs/runbooks/agente.md`, `docs/runbooks/web.md`, `testes/roteiro.md`, `testes/evidencias/isolamento-*.json`, `README.md`, `CHECKLIST.md`.
+- **Verificação:**
+  - Testes escritos antes do código: coleta falhou (módulo ausente) e 3 failed no agente, dashboard e derivadas. Depois: `pytest` → 253 passed, 17 skipped.
+  - Comandos de versão rodados em programas reais (Apache 2.4.58, PHP 8.3.6, Unbound 1.19.2, Postfix 3.8.6): todas as versões lidas; a comparação marcou os CVEs esperados.
+  - Sabotagens acusadas:
+    - ignorar o ramo (3.7.12 marcado pela correção do ramo 3.8);
+    - avisar a cada ciclo em vez de uma vez;
+    - versão ilegível;
+    - programa fora do ar;
+    - container do banco sem dado;
+    - versões fora do formato na API (400).
+- **Pendências / riscos:**
+  - Rodar `MONITOR_INFRA=1 pytest tests/test_infra.py` no WSL (confere as versões reais nos containers).
+  - Avisar P2 e P3 das mudanças nos arquivos deles (campo `versoes`, `db.cpu_pct` e `db.mem_pct`, tabela no dashboard).
+  - A lista de CVEs é mantida à mão.
+

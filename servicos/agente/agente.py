@@ -7,11 +7,12 @@ O que cada parte do JSON significa (o coletor da P2 le a cada 15 s):
 - apache, unbound .............. contadores ACUMULADOS do servico (a taxa e a diferenca entre duas leituras)
 - log_web, postfix (menos fila), auth ... o que aconteceu desde a leitura ANTERIOR (janela)
 - containers, host, postfix.fila, hashes ... foto do momento
+- versoes ......................... versao de cada programa (guardada por 10 min; vulnerabilidade conhecida)
 - campo None = a fonte nao respondeu (container parado etc.); o motivo aparece no terminal do agente.
 Por causa da "janela", so o coletor deve ler o /metrics enquanto a plataforma estiver medindo.
 
 Uso:  python servicos/agente/agente.py        (le MONITOR_AGENTE_TOKEN do .env da raiz; porta 9101)
-Nao importa nada de plataforma/ (regra do AGENTS.md): e um programa separado.
+Nao importa nada de plataforma/ (regra de camadas do projeto): e um programa separado.
 """
 
 from __future__ import annotations
@@ -51,6 +52,7 @@ class Agente:
         self.login = LeitorIncremental(log_login)
         self.log_smtp = fontes.LeitorDockerLogs(executor, NOMES["smtp"])
         self.host = fontes.MedidorHost()
+        self.versoes = fontes.LeitorVersoes(executor, NOMES)
         self._trava = threading.Lock()
 
     def metricas(self) -> dict:
@@ -63,6 +65,7 @@ class Agente:
                 "postfix": paralelo.submit(fontes.postfix, self.executor, NOMES["smtp"], self.log_smtp),
                 "containers": paralelo.submit(fontes.containers, self.executor, NOMES),
                 "hashes": paralelo.submit(fontes.hashes, self.executor, CONFIGURACOES),
+                "versoes": paralelo.submit(self.versoes.ler),
             }
             leitura = {
                 "ts": int(time.time()),
@@ -71,7 +74,7 @@ class Agente:
                 "host": self.host.medir(),
             }
             leitura.update({nome: tarefa.result() for nome, tarefa in tarefas.items()})
-        ordem = ["ts", "apache", "log_web", "unbound", "postfix", "auth", "containers", "host", "hashes"]
+        ordem = ["ts", "apache", "log_web", "unbound", "postfix", "auth", "containers", "host", "hashes", "versoes"]
         return {chave: leitura[chave] for chave in ordem}
 
 

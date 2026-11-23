@@ -4,7 +4,7 @@ O que garantem:
 1. toda conexao com o MySQL passa pelo db.php (que le as variaveis de ambiente);
 2. nao sobrou senha, root ou e-mail real no codigo;
 3. todo arquivo PHP tem sintaxe valida;
-4. o registro de login grava uma linha JSON no formato combinado em docs/ia/pedido-p1.md;
+4. o registro de login grava uma linha JSON no formato descrito em docs/runbooks/web.md;
 5. o init.sql cria as 3 tabelas e o usuario monitor so pode ler.
 Cada verificacao tem um teste de sabotagem logo abaixo.
 """

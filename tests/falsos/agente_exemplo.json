@@ -7,5 +7,7 @@
   "auth": [{"ts": 1795036790, "origem": "192.168.56.1", "usuario": "admin@teste.com", "sucesso": false}],
   "containers": {"web": {"cpu_pct": 12.5, "mem_pct": 48.1}, "db": {"cpu_pct": 3.0, "mem_pct": 30.2}},
   "host": {"cpu_pct": 12.5, "mem_pct": 48.1, "disco_pct": 37.0, "disco_io_kbs": 120.0, "disco_latencia_ms": 2.1},
-  "hashes": {"/etc/postfix/main.cf": "9f2c0000000000000000000000000000000000000000000000000000000000aa"}
+  "hashes": {"/etc/postfix/main.cf": "9f2c0000000000000000000000000000000000000000000000000000000000aa"},
+  "versoes": {"web": {"apache": "2.4.62", "php": "8.3.14"}, "db": {"mysql": "8.0.40"},
+              "dns": {"unbound": "1.20.0"}, "smtp": {"postfix": "3.9.0"}}
 }

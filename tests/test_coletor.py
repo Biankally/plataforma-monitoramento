@@ -119,8 +119,10 @@ def test_sabotagem_banco_fora_do_ar_nao_vira_baseline(monkeypatch):
     coletor.montar_lote(1000, memoria)                       # leitura boa
     c.mysql = {"disponivel": 0.0, "latencia_ms": 1.0}        # caiu
     queda = valores(coletor.montar_lote(1015, memoria))
+    # db.cpu_pct/db.mem_pct vem do agente (docker stats do container), nao da sonda MySQL: continuam valendo
     assert queda["db.disponivel"] == 0.0 and not any(m.startswith("db.") and m not in
-                                                     ("db.disponivel", "db.latencia_ms") for m in queda)
+                                                     ("db.disponivel", "db.latencia_ms", "db.cpu_pct", "db.mem_pct")
+                                                     for m in queda)
     c.mysql = {"disponivel": 1.0, "latencia_ms": 2.0, "status.Questions": 1300.0, "status.Threads_connected": 5.0,
                "max_connections": 100.0, "tamanho_mb": 10.0}  # voltou
     volta = valores(coletor.montar_lote(1030, memoria))
@@ -217,7 +219,8 @@ def test_ciclo_envia_o_lote_e_depois_a_leitura_de_seguranca(monkeypatch):
     coletor.ciclo("http://api", "tok-api", coletor.Memoria())
     assert [u for u, _, _ in posts] == ["http://api/api/ingest", "http://api/api/seguranca/leitura"]
     assert all(h == {"X-Token": "tok-api"} for _, _, h in posts)
-    assert posts[1][1] == {"ts": EXEMPLO["ts"], "auth": EXEMPLO["auth"], "hashes": EXEMPLO["hashes"]}
+    assert posts[1][1] == {"ts": EXEMPLO["ts"], "auth": EXEMPLO["auth"], "hashes": EXEMPLO["hashes"],
+                           "versoes": EXEMPLO["versoes"]}
 
 
 def test_sabotagem_agente_fora_do_ar_nao_envia_seguranca(monkeypatch):

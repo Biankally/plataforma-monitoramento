@@ -154,6 +154,16 @@ def test_pagina_de_seguranca_mostra_eventos_e_linha_de_base(api):
     assert "/etc/postfix/main.cf" in texto
 
 
+def test_pagina_de_seguranca_mostra_versoes_e_vulnerabilidade(api):
+    versoes = {"dns": {"unbound": "1.20.0"}, "smtp": {"postfix": "3.9.0"}}
+    r = requests.post(f"{api}/api/seguranca/leitura", headers=H, timeout=5,
+                      json={"ts": int(time.time()), "auth": [], "versoes": versoes})
+    assert r.status_code == 201
+    texto = textos(abrir("Segurança"))
+    assert "VULNERABILIDADE" in texto and "CVE-2024-8508" in texto
+    assert "unbound" in texto and "1.20.0" in texto and "postfix" in texto
+
+
 def test_pagina_de_seguranca_sem_eventos_avisa(api):
     assert "Nenhum evento" in textos(abrir("Segurança"))
 

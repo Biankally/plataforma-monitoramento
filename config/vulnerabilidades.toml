@@ -1,0 +1,87 @@
+# Vulnerabilidades conhecidas (CVE) dos programas vigiados. A plataforma compara a versao que o
+# agente le em cada container com esta lista e gera evento VULNERABILIDADE (com e-mail).
+#
+# Campos: servico, programa, cve, corrigido_em (primeira versao sem a falha), nivel (ATENCAO/CRITICO),
+# descricao, fonte. Opcionais: afeta_desde (falha so a partir desta versao) e ramo (a correcao vale so
+# para esse ramo, ex.: "3.8"). Conferido nas fontes em 23/11/2026; atualize quando sair falha nova.
+#
+# Limite conhecido: a comparacao e por numero de versao. Distribuicoes (Debian, Alpine) as vezes
+# corrigem a falha sem trocar o numero ("backport"); nesse caso o aviso e um falso positivo e deve
+# ser conferido no aviso de seguranca da distribuicao (ver docs/playbooks/seguranca-vulnerabilidade.md).
+
+[[vulnerabilidade]]
+servico = "web"
+programa = "apache"
+cve = "CVE-2024-38476"
+corrigido_em = "2.4.60"
+nivel = "CRITICO"
+descricao = "Cabecalhos de resposta maliciosos executam handlers locais (vazamento de informacao, SSRF, execucao de script)"
+fonte = "https://httpd.apache.org/security/vulnerabilities_24.html"
+
+[[vulnerabilidade]]
+servico = "web"
+programa = "apache"
+cve = "CVE-2024-40725"
+afeta_desde = "2.4.60"
+corrigido_em = "2.4.62"
+nivel = "CRITICO"
+descricao = "Vazamento de codigo-fonte de arquivos configurados com AddType"
+fonte = "https://httpd.apache.org/security/vulnerabilities_24.html"
+
+[[vulnerabilidade]]
+servico = "web"
+programa = "apache"
+cve = "CVE-2024-42516"
+corrigido_em = "2.4.64"
+nivel = "ATENCAO"
+descricao = "HTTP response splitting por cabecalho Content-Type manipulado"
+fonte = "https://httpd.apache.org/security/vulnerabilities_24.html"
+
+[[vulnerabilidade]]
+servico = "web"
+programa = "php"
+cve = "CVE-2024-8926"
+ramo = "8.3"
+corrigido_em = "8.3.12"
+nivel = "ATENCAO"
+descricao = "Contorno da correcao do CVE-2024-4577 (injecao de argumentos no PHP-CGI; explora o Windows)"
+fonte = "https://security-tracker.debian.org/tracker/CVE-2024-8926"
+
+[[vulnerabilidade]]
+servico = "db"
+programa = "mysql"
+cve = "CVE-2024-21241"
+ramo = "8.0"
+corrigido_em = "8.0.40"
+nivel = "ATENCAO"
+descricao = "Falha no otimizador permite travar o servidor (negacao de servico) por usuario com privilegio alto"
+fonte = "https://www.rapid7.com/db/vulnerabilities/cve-2024-21241/"
+
+[[vulnerabilidade]]
+servico = "dns"
+programa = "unbound"
+cve = "CVE-2024-8508"
+corrigido_em = "1.21.1"
+nivel = "ATENCAO"
+descricao = "Compressao de nomes sem limite em respostas grandes (negacao de servico)"
+fonte = "https://nlnetlabs.nl/downloads/unbound/CVE-2024-8508.txt"
+
+[[vulnerabilidade]]
+servico = "smtp"
+programa = "postfix"
+cve = "CVE-2023-51764"
+ramo = "3.8"
+corrigido_em = "3.8.5"
+nivel = "ATENCAO"
+descricao = "SMTP smuggling (mensagem falsificada escondida dentro de outra)"
+fonte = "https://postfix.org/smtp-smuggling.html"
+
+[[vulnerabilidade]]
+servico = "smtp"
+programa = "postfix"
+cve = "CVE-2023-51764"
+ramo = "3.7"
+corrigido_em = "3.7.10"
+nivel = "ATENCAO"
+descricao = "SMTP smuggling (mensagem falsificada escondida dentro de outra)"
+fonte = "https://postfix.org/smtp-smuggling.html"

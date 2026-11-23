@@ -285,3 +285,51 @@ def hashes(executor: Executor, arquivos: dict[str, list[str]]) -> dict:
     with ThreadPoolExecutor(max_workers=len(pares) or 1) as paralelo:   # um docker exec por arquivo, juntos
         hashes_lidos = list(paralelo.map(lambda par: um_hash(*par), pares))
     return {caminho: h for (_, caminho), h in zip(pares, hashes_lidos)}
+
+
+# ---------- versao de cada programa (vulnerabilidade conhecida por servico) ----------
+
+# (servico, programa) -> (comando dentro do container, expressao que acha o numero da versao na saida)
+COMANDOS_VERSAO = {
+    ("web", "apache"): (["apache2", "-v"], r"Apache/(\d+(?:\.\d+)+)"),
+    ("web", "php"): (["php", "-r", "echo PHP_VERSION;"], r"^(\d+(?:\.\d+)+)"),
+    ("db", "mysql"): (["mysqld", "--version"], r"Ver (\d+(?:\.\d+)+)"),
+    ("dns", "unbound"): (["unbound", "-V"], r"Version (\d+(?:\.\d+)+)"),
+    ("smtp", "postfix"): (["postconf", "-h", "mail_version"], r"^(\d+(?:\.\d+)+)"),
+}
+
+
+class LeitorVersoes:
+    """Pergunta a versao de cada programa. Versao quase nunca muda: guarda por `validade_s` (10 min).
+    So a leitura que deu certo vai para o cache; a que falhou (None) e tentada de novo na proxima vez."""
+
+    def __init__(self, executor: Executor, nomes: dict[str, str], validade_s: float = 600) -> None:
+        self.executor, self.nomes, self.validade_s = executor, nomes, validade_s
+        self._cache: dict[tuple[str, str], tuple[float, str]] = {}
+
+    def _uma(self, chave: tuple[str, str]) -> str | None:
+        guardado = self._cache.get(chave)
+        if guardado and time.monotonic() - guardado[0] < self.validade_s:
+            return guardado[1]
+        servico, programa = chave
+        comando, padrao = COMANDOS_VERSAO[chave]
+        try:
+            saida = self.executor(["docker", "exec", self.nomes[servico], *comando])
+        except ErroFonte as e:
+            avisar(f"versao de {programa}: {e}")
+            return None
+        achado = re.search(padrao, saida.strip(), re.MULTILINE)
+        if not achado:
+            avisar(f"versao de {programa}: saida inesperada: {saida[:80]!r}")
+            return None
+        self._cache[chave] = (time.monotonic(), achado.group(1))
+        return achado.group(1)
+
+    def ler(self) -> dict:
+        chaves = list(COMANDOS_VERSAO)
+        with ThreadPoolExecutor(max_workers=len(chaves)) as paralelo:
+            lidas = list(paralelo.map(self._uma, chaves))
+        resultado: dict[str, dict[str, str | None]] = {}
+        for (servico, programa), versao in zip(chaves, lidas):
+            resultado.setdefault(servico, {})[programa] = versao
+        return resultado

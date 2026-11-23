@@ -140,6 +140,16 @@ critico = 20
 
 # ---------------------------------------------------------------- Maquina / containers
 
+["db.cpu_pct"]
+operador = ">"
+atencao = 80
+critico = 95
+
+["db.mem_pct"]
+operador = ">"
+atencao = 85
+critico = 95
+
 ["host.cpu_pct"]
 operador = ">"
 atencao = 80

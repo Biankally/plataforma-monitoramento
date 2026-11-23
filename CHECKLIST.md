@@ -47,7 +47,7 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 - [x] QPS (queries por segundo)
 - [x] Taxa de erros / rollback / transaction failures
 - [x] Número de conexões abertas e pools
-- [ ] Uso de CPU, memória, I/O e latência de disco
+- [x] Uso de CPU, memória, I/O e latência de disco
 - [x] Tamanho do banco e crescimento (GB/dia)
 - [x] Número de slow queries
 
@@ -76,7 +76,7 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 - [x] Detecção de **anomalias de tráfego** (picos, indicadores de DDoS) — `plataforma/dominio/seguranca.py`
 - [x] Detecção de **falhas de autenticação** (logins falhos por conta/IP, brute-force) — `plataforma/dominio/seguranca.py`
 - [x] Alerta de **alteração de arquivos de configuração** — `plataforma/dominio/seguranca.py`
-- [ ] Monitoramento de **vulnerabilidade conhecida por serviço** — `plataforma/dominio/seguranca.py`
+- [x] Monitoramento de **vulnerabilidade conhecida por serviço** — `plataforma/dominio/vulnerabilidades.py`, `config/vulnerabilidades.toml`
 
 ## 6. Testes (evidências para o documento)
 
@@ -120,7 +120,7 @@ Normas: NBR 14724:2024 (estrutura), NBR 6023:2018 (referências), NBR 10520:2023
 - [x] Teste de camadas (`tests/test_camadas.py`) com sabotagem
 - [x] Teste termômetro de ponta a ponta (`tests/test_termometro.py`) com sabotagem
 - [ ] GitHub Actions verde em todo push
-- [ ] Teste de isolamento: ataque ao `web` sem derrubar `db`, `dns` e `smtp` (regra da professora)
+- [x] Teste de isolamento: ataque ao `web` sem derrubar `db`, `dns` e `smtp` (regra da professora)
 - [ ] Ensaio final: clonar numa pasta nova, instalar só pelo README e rodar a demonstração
 
 ## 10. Decisões com a professora (resolvidas)

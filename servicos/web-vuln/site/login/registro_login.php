@@ -1,5 +1,5 @@
 <?php
-// Registra cada tentativa de login em uma linha JSON (formato combinado em docs/ia/pedido-p1.md):
+// Registra cada tentativa de login em uma linha JSON (formato descrito em docs/runbooks/web.md):
 // {"ts": 1795036790, "origem": "IP", "usuario": "email", "sucesso": false}
 // O agente le este arquivo para detectar forca bruta. Caminho: variavel LOGIN_LOG.
 function registrar_tentativa(string $usuario, bool $sucesso): void

@@ -44,4 +44,4 @@ docs/                LOG, guia de instalação, runbooks, playbooks, pedidos por
 relatorio/           documento final em PDF (ABNT)
 ```
 
-Regras para quem usa IA: [`AGENTS.md`](AGENTS.md). Entregas: [`CHECKLIST.md`](CHECKLIST.md).
+Regras de contribuição: [`AGENTS.md`](AGENTS.md). Entregas: [`CHECKLIST.md`](CHECKLIST.md).

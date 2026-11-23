@@ -58,6 +58,8 @@ def test_valores_calculados_a_mao():
         "host.mem_pct": 48.1,
         "host.disco_io_kbs": 120.0,
         "host.disco_latencia_ms": 2.1,
+        "db.cpu_pct": 3.0,
+        "db.mem_pct": 30.2,
     }
     assert v.keys() == esperado.keys()
     for metrica, valor in esperado.items():
@@ -151,3 +153,16 @@ def test_nao_altera_as_leituras_recebidas():
     ant_copia = copy.deepcopy(ant)
     derivar(atual, ant)
     assert atual == EXEMPLO and ant == ant_copia
+
+
+def test_cpu_e_memoria_do_container_do_banco():
+    """Enunciado 3.2: uso de CPU e memoria do banco (o agente le do docker stats)."""
+    v = _valores(EXEMPLO, None)
+    assert v["db.cpu_pct"] == 3.0 and v["db.mem_pct"] == 30.2
+
+
+def test_sabotagem_container_do_banco_sem_dado_omite_as_metricas():
+    atual = copy.deepcopy(EXEMPLO)
+    atual["containers"]["db"] = {"cpu_pct": None, "mem_pct": None}
+    v = _valores(atual, None)
+    assert "db.cpu_pct" not in v and "db.mem_pct" not in v

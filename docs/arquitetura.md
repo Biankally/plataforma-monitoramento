@@ -20,7 +20,7 @@ Requisitos da disciplina atendidos por esta arquitetura:
 | Banco MySQL, DNS Unbound, SMTP Postfix | Containers `db`, `dns` e `smtp` (seção 2) |
 | Alvo web vulnerável | Site "Receitas Práticas" (PHP + MySQL) com vulnerabilidades mantidas de propósito |
 | Alertas e e-mail | Motor de alertas com histerese + notificador (seção 7) |
-| Segurança (DDoS, força bruta, alteração de configuração) | Seção 8 |
+| Segurança (DDoS, força bruta, alteração de configuração, vulnerabilidade conhecida) | Seção 8 |
 | Sem segredos no repositório | Tudo sensível vem do `.env` (seção 10) |
 
 ## 2. Visão de implantação
@@ -137,6 +137,8 @@ Nome, unidade e descrição vêm do contrato. "Fonte" diz de onde o valor é med
 | `db.tamanho_mb` | MB | data_length + index_length | sonda MySQL | > 2000 | > 4000 |
 | `db.crescimento_mb_dia` | MB/dia | Crescimento projetado para 24 h | sonda MySQL | > 500 | > 2000 |
 | `db.slow_queries_min` | consultas/min | Diferenca de Slow_queries por minuto | sonda MySQL | > 5 | > 30 |
+| `db.cpu_pct` | % | Uso de CPU do container do banco | agente (`docker stats`) | > 80 | > 95 |
+| `db.mem_pct` | % | Uso de memoria do container do banco sobre o limite | agente (`docker stats`) | > 85 | > 95 |
 | `dns.disponivel` | 0/1 | Resposta valida em ate 2 s | sonda | < 1 | < 1 |
 | `dns.latencia_ms` | ms | Tempo de resolucao da consulta de teste | sonda | > 100 | > 500 |
 | `dns.qps` | consultas/s | Diferenca de total.num.queries por segundo | agente | > 100 | > 500 |
@@ -195,13 +197,14 @@ Os limites são **iniciais** e devem ser recalibrados com a linha de base medida
 
 ## 8. Segurança
 
-Três detecções, todas gravam em `evento_seguranca` e mandam e-mail (`plataforma/dominio/seguranca.py`):
+Quatro detecções, todas gravam em `evento_seguranca` e mandam e-mail (`plataforma/dominio/seguranca.py` e `plataforma/dominio/vulnerabilidades.py`):
 
 | Tipo | Detecção | ATENÇÃO | CRÍTICO |
 | --- | --- | --- | --- |
 | `TRAFEGO` (DDoS) | escore z de `web.rps` e `dns.qps` contra a última hora (precisa de 20 amostras; piso de desvio de 5 para não disparar com tráfego ocioso; só aumento conta) | z ≥ 3 | z ≥ 5 |
 | `AUTENTICACAO` (força bruta) | falhas de login por IP em 60 s (cada IP é avaliado sozinho) | 5 falhas | 20 falhas |
 | `CONFIGURACAO` | hash de arquivo diferente da linha de base | — | sempre |
+| `VULNERABILIDADE` | versão de cada programa (Apache, PHP, MySQL, Unbound, Postfix, lida pelo agente) comparada com a lista de CVEs de `config/vulnerabilidades.toml` | conforme o CVE | conforme o CVE |
 
 - **Sem repetição:** um aviso só se repete se o nível subir, ou depois de 5 min (TRAFEGO e AUTENTICACAO). Alteração de
   arquivo avisa uma vez por mudança de hash.
@@ -210,7 +213,13 @@ Três detecções, todas gravam em `evento_seguranca` e mandam e-mail (`platafor
   mudança legítima de configuração. Arquivo novo ou ausente não gera evento.
 - O serviço de cada evento de arquivo é inferido do caminho (`postfix` → smtp, `unbound` → dns, `mysql` → db,
   `apache`/`/var/www` → web, senão host).
-- Não implementado: eventos `VULNERABILIDADE` (a tabela os aceita).
+- **Vulnerabilidade conhecida:** o agente lê a versão de cada programa (guarda por 10 min) e o Coletor a repassa em
+  `POST /api/seguranca/leitura` (campo `versoes`). Cada CVE que pega a versão gera um evento, uma vez por falha; as
+  versões lidas aparecem em `GET /api/seguranca` (campo `versoes`) e na página Segurança do dashboard.
+  A comparação é por número de versão: quando a distribuição corrige a falha sem trocar o número (backport), o aviso
+  é falso positivo (playbook `seguranca-vulnerabilidade.md`). A lista de CVEs é mantida à mão, com a fonte de cada um.
+- **Banco (enunciado 3.2):** CPU e memória do banco vêm do container (`db.cpu_pct`, `db.mem_pct`); I/O e latência de
+  disco são os do disco da máquina (`host.disco_io_kbs`, `host.disco_latencia_ms`), que o container do banco usa.
 
 ## 9. Modelo de dados (SQLite, modo WAL)
 

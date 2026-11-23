@@ -53,6 +53,11 @@ class ExecutorFalso:
             "docker stats": ("monitoramento-web-1\t12.50%\t48.10%\nmonitoramento-db-1\t3.00%\t30.20%\n"
                              "monitoramento-dns-1\t0.10%\t2.00%\nmonitoramento-smtp-1\t0.20%\t3.00%\n"),
             "sha256sum": "9f2c" + "0" * 58 + "aa  /etc/postfix/main.cf\n",
+            "apache2 -v": "Server version: Apache/2.4.62 (Debian)\nServer built:   2024-07-17\n",
+            "PHP_VERSION": "8.3.14",
+            "mysqld --version": "/usr/sbin/mysqld  Ver 8.0.40 for Linux on x86_64 (MySQL Community Server - GPL)\n",
+            "unbound -V": "Version 1.20.0\n\nConfigure line: --prefix=/usr\n",
+            "mail_version": "3.9.0\n",
         }
         self.fora_do_ar: set[str] = set()
 
@@ -230,7 +235,7 @@ def test_hash_muda_quando_a_configuracao_muda(ambiente):
     assert _ler(url)["hashes"]["/etc/postfix/main.cf"] != antes
 
 
-# ---------- regra do AGENTS.md ----------
+# ---------- regra de camadas do projeto ----------
 
 def test_agente_nao_importa_a_plataforma():
     for arquivo in PASTA_AGENTE.glob("*.py"):
@@ -255,3 +260,18 @@ def test_consultas_ao_docker_rodam_em_paralelo(tmp_path):
     inicio = time.monotonic()
     ag.metricas()
     assert time.monotonic() - inicio < 2.0, "as consultas ao Docker estao rodando uma depois da outra"
+
+
+def test_versoes_de_cada_programa(ambiente):
+    url, _, _ = ambiente
+    assert _ler(url)["versoes"] == {"web": {"apache": "2.4.62", "php": "8.3.14"}, "db": {"mysql": "8.0.40"},
+                                    "dns": {"unbound": "1.20.0"}, "smtp": {"postfix": "3.9.0"}}
+
+
+def test_sabotagem_programa_fora_do_ar_vira_null_e_versao_fica_em_cache(ambiente):
+    url, _, executor = ambiente
+    executor.fora_do_ar = {"unbound -V"}
+    assert _ler(url)["versoes"]["dns"]["unbound"] is None
+    executor.fora_do_ar = set()
+    executor.respostas["apache2 -v"] = "Server version: Apache/9.9.9\n"
+    assert _ler(url)["versoes"]["web"]["apache"] == "2.4.62", "versao tem que vir do cache (10 min)"

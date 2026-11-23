@@ -40,6 +40,9 @@ CREATE INDEX IF NOT EXISTS idx_tentativa_ts ON tentativa_login (ts);
 CREATE TABLE IF NOT EXISTS hash_arquivo (
   caminho TEXT PRIMARY KEY, atual TEXT NOT NULL, ts_atual INTEGER NOT NULL,
   base TEXT, desde_base INTEGER);
+CREATE TABLE IF NOT EXISTS versao_programa (
+  servico TEXT NOT NULL, programa TEXT NOT NULL, versao TEXT NOT NULL, ts INTEGER NOT NULL,
+  PRIMARY KEY (servico, programa));
 """
 
 
@@ -168,6 +171,21 @@ class Banco:
         with self._conectar() as c:
             return {r["caminho"]: r["base"] for r in c.execute(
                 "SELECT caminho, base FROM hash_arquivo WHERE base IS NOT NULL ORDER BY caminho")}
+
+    def salvar_versoes(self, ts: int, versoes: dict) -> None:
+        """Ultima versao lida de cada programa (vulnerabilidade conhecida por servico)."""
+        with self._conectar() as c:
+            for servico, programas in versoes.items():
+                for programa, versao in programas.items():
+                    if versao:
+                        c.execute("INSERT INTO versao_programa (servico, programa, versao, ts) VALUES (?, ?, ?, ?)"
+                                  " ON CONFLICT (servico, programa) DO UPDATE SET versao = excluded.versao,"
+                                  " ts = excluded.ts", (servico, programa, versao, ts))
+
+    def versoes(self) -> list[dict]:
+        with self._conectar() as c:
+            return [dict(r) for r in c.execute(
+                "SELECT servico, programa, versao, ts FROM versao_programa ORDER BY servico, programa")]
 
     def linha_base_detalhada(self) -> list[dict]:
         with self._conectar() as c:
