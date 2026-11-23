@@ -37,8 +37,12 @@ def enviar(alerta: dict) -> None:
     if modo == "arquivo":
         pasta = Path(os.environ.get("NOTIF_DIR", "notificacoes"))
         pasta.mkdir(parents=True, exist_ok=True)
-        nome = f"{alerta['ts']}_{alerta['metrica']}_{alerta['nivel_novo']}.txt"
-        (pasta / nome).write_text(msg.as_string(), encoding="utf-8")
+        base = f"{alerta['ts']}_{alerta.get('servico', '')}_{alerta['metrica']}_{alerta['nivel_novo']}"
+        destino, n = pasta / f"{base}.txt", 1
+        while destino.exists():                 # dois avisos no mesmo segundo: nenhum sobrescreve o outro
+            n += 1
+            destino = pasta / f"{base}_{n}.txt"
+        destino.write_text(msg.as_string(), encoding="utf-8")
     elif modo == "smtp":
         with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORTA", "587")), timeout=15) as s:
             s.starttls()

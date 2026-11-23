@@ -111,9 +111,9 @@ Normas: NBR 14724:2024 (estrutura), NBR 6023:2018 (referências), NBR 10520:2023
 
 ## 8. Segurança do próprio repositório
 
-- [ ] Arquivo `.env` (senhas, ex.: SMTP) listado no `.gitignore` e **nunca** enviado
-- [ ] Nenhuma senha, token ou chave privada em nenhum arquivo do repositório
-- [ ] README explicando o projeto e como rodar
+- [x] Arquivo `.env` (senhas, ex.: SMTP) listado no `.gitignore` e **nunca** enviado
+- [x] Nenhuma senha, token ou chave privada em nenhum arquivo do repositório
+- [x] README explicando o projeto e como rodar
 
 ## 9. Garantia de execução (regras do projeto)
 

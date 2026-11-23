@@ -343,3 +343,28 @@ Modelo de entrada:
   - Avisar P2 e P3 das mudanças nos arquivos deles (campo `versoes`, `db.cpu_pct` e `db.mem_pct`, tabela no dashboard).
   - A lista de CVEs é mantida à mão.
 
+## 2026-11-23 15:00 — Ensaio da plataforma inteira e correção do notificador
+- **Quem:** Bia (P1)
+- **O que mudou:**
+  1. **Ensaio de ponta a ponta:**
+     - Rodaram juntos agente, API e coletor (o laço de 15 s, aqui com 3 s), contra serviços reais: site PHP com MariaDB, Unbound, Postfix e Apache com `/server-status`.
+     - Só o Docker foi simulado (um `docker` falso que roda os comandos na própria máquina), porque o ambiente de validação não baixa imagens.
+     - Resultado: 39 das 40 métricas gravadas (falta só `db.crescimento_mb_dia`, que exige 60 s de histórico); os 4 serviços e o `host` ficaram OK.
+     - Força bruta (29 tentativas): AUTENTICACAO ATENÇÃO e depois CRÍTICO.
+     - `main.cf` alterado depois da linha de base: CONFIGURACAO CRÍTICO.
+     - Unbound derrubado: `dns` ATENÇÃO e depois CRÍTICO, com os outros serviços OK.
+     - Versões antigas da máquina de teste: 4 eventos VULNERABILIDADE.
+     - Todos os eventos saíram por e-mail.
+  2. **Defeito encontrado no ensaio:** no modo arquivo, dois avisos com a mesma hora, métrica e nível tinham o mesmo nome de arquivo, e o segundo sobrescrevia o primeiro (4 vulnerabilidades geraram só 2 arquivos). Agora o nome inclui o serviço, e um número se o arquivo já existir. No modo SMTP não havia perda.
+  3. Textos desatualizados:
+     - porta do agente no comentário do `config/servicos.toml` (9100 → 9101);
+     - "notebook" → WSL no `testes/roteiro.md` e no `docs/ia/pedido-p1.md`;
+     - endereços da VM antiga no `pedido-p1.md`.
+  4. `CHECKLIST.md`: marcados os itens de segurança do repositório (`.env` fora do Git, nenhum segredo, README).
+- **Arquivos:** `plataforma/infra/notificador.py`, `tests/test_notificador.py`, `config/servicos.toml`, `testes/roteiro.md`, `docs/ia/pedido-p1.md`, `CHECKLIST.md`.
+- **Verificação:**
+  - `tests/test_notificador.py` escrito antes: 1 failed (2 de 3 arquivos); depois, 1 passed.
+  - `pytest` → 254 passed, 17 skipped.
+  - Varredura: nenhum `.env`, banco ou chave rastreados; nenhum e-mail real fora da `vendor/`.
+- **Pendências / riscos:** repetir o ensaio no WSL com os containers de verdade (`docs/runbooks/ataques.md`); avisar a professora que o alvo é o site do grupo, e não a DVWA (CHECKLIST, seção 10).
+

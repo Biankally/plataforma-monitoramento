@@ -8,7 +8,7 @@ api_url = "http://127.0.0.1:5000"
 intervalo_s = 15
 # Agente da VM-S (P1). Ligue quando ele estiver no ar; o token vem do .env (MONITOR_AGENTE_TOKEN).
 # Tambem pode ser definido por MONITOR_AGENTE_URL. Sem isto o Coletor mede so com as sondas.
-# agente_url = "http://127.0.0.1:9100"
+# agente_url = "http://127.0.0.1:9101"
 
 [[servico]]
 nome = "web"

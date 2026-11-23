@@ -327,7 +327,7 @@ teto (1 CPU, 512 MB) e os outros containers com folga.
 
 **Passos:**
 
-1. Do notebook, rodar `python testes/ataque_brute_force.py` (script da P1, contra o login do site).
+1. No WSL, rodar `python testes/ataque_brute_force.py --criar-vitima` (script da P1, contra o login do site).
 2. Esperar até 15 s e abrir a página Segurança.
 3. Deixar o script chegar a 20 falhas em 60 s e olhar de novo.
 
