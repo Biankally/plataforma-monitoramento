@@ -207,3 +207,15 @@ EOF
 - **Arquivos:** `docs/arquitetura.md`, `docs/playbooks/*.md`, `tests/test_docs.py`.
 - **Verificação:** `pytest tests/test_docs.py` → 17 passed: toda métrica com regra está na arquitetura e no playbook da sua linha do índice, todo playbook está no índice e tem as três seções, os limites de segurança batem com o código, os links entre playbooks existem. 8 sabotagens na documentação acusadas.
 - **Pendências / riscos:** aguardando revisão de P3. Os comandos dos playbooks não foram executados nos containers (conferir nomes de logs e caminhos no WSL). A arquitetura descreve o agente como combinado com P1; ajustar quando o agente real existir. Itens que não pude confirmar: limites de CPU/memória dos containers (vieram do LOG de 20/11) e se o dashboard já usa `/api/seguranca`.
+
+## 2026-11-23 10:50 — Roteiro de testes T01 a T15 (P3, tarefa 3)
+- **Quem:** Yuri (P3)
+- **O que mudou:** `testes/roteiro.md` com os 15 casos de teste da plataforma, cada um com objetivo, requisito do enunciado, pré-condições, passos numerados (comandos exatos), resultado esperado, arquivo de evidência em `testes/evidencias/` e campo de passou/falhou; seções de ambiente (VM, 3 terminais, modo de e-mail, tempos das regras de alerta), de como registrar a evidência e tabela de resumo caso × requisito × dependência. `tests/test_roteiro.py` confere a estrutura.
+- **Por quê:** pedido P3, tarefa 3. A seção 13 da arquitetura citada no pedido não existe; os casos foram montados a partir da seção 6 do `CHECKLIST.md` e dos requisitos do enunciado (seções 2 a 5).
+- **Arquivos:** `testes/roteiro.md`, `tests/test_roteiro.py`, `docs/LOG.md`.
+- **Verificação:**
+  - Teste escrito antes: `pytest tests/test_roteiro.py` → 5 failed (arquivo ausente); depois do roteiro → 5 passed.
+  - Sabotagens acusadas: caso T07 removido, campo "Resultado esperado" trocado no T03, evidência do T12 sem arquivo, T15 fora da tabela de resumo, e (no arquivo real) campo "Requisito" do T12 renomeado.
+  - Tempos dos casos T06, T08 e T09 conferidos contra `plataforma/dominio/alertas.py` (disponibilidade: 1ª falha ATENÇÃO, 2ª CRÍTICO; demais sobem com 2; todas descem com 3, direto para o nível medido).
+  - `pytest` → 173 passed, 15 skipped (os pulados precisam de Docker/PHP: `MONITOR_INFRA=1`).
+- **Pendências / riscos:** revisão de P1 e P2 (critério "pronto quando" do pedido). T10, T12 e T13 dependem do agente e dos scripts de ataque (P1, ainda não estão no repositório). T08 usa `tc` na interface local: validar na VM se o atraso pega a porta publicada pelo Docker. T14: ferramenta e responsável pela "vulnerabilidade conhecida por serviço" a definir no grupo.
