@@ -8,8 +8,8 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 ## 1. Entregas obrigatórias (enunciado, seção 2)
 
-- [ ] Front-end responsivo com dashboard **por serviço** — `plataforma/dashboard/`
-- [ ] Front-end com **visão consolidada** (todos os serviços) — `plataforma/dashboard/`
+- [x] Front-end responsivo com dashboard **por serviço** — `plataforma/dashboard/`
+- [x] Front-end com **visão consolidada** (todos os serviços) — `plataforma/dashboard/`
 - [x] Backend de **ingestão** de métricas — `plataforma/api/app.py`
 - [x] **Armazenamento** de métricas — `plataforma/infra/banco.py`
 - [x] Regras de alerta — `plataforma/dominio/alertas.py`, `config/regras.toml`
