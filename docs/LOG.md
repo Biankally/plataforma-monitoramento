@@ -165,20 +165,19 @@ Modelo de entrada:
 - **Verificação:** `pytest tests/test_derivadas.py` → 13 passed (teste escrito antes: erro de import); valores calculados à mão no cabeçalho do teste. Mutações (p95, divisão por zero, unidade de e-mails/min, faixa 5xx, falha da sonda DNS) → acusadas. `pytest` inteiro (cópia do repositório com os arquivos recebidos) → 44 passed, 5 de 5 vezes.
 - **Pendências / riscos:** premissas: `log_web` e `postfix` são contagens da janela (não acumulam); `apache` e `unbound` são acumulados; `smtp.taxa_erro_pct` usa como total sent+deferred+bounced+rejeicoes+timeouts; p95 pelo posto mais próximo. Confirmar com P1 (agente).
 
-## 2026-11-21 $HORA — Coletor junta sondas reais e agente num lote só (P2, tarefa 4)
+## 2026-11-21 — Coletor junta sondas reais e agente num lote só (P2, tarefa 4)
 - **Quem:** Luiz (P2)
 - **O que mudou:**
-  1. \`coletor.py\` ganhou os tipos de sonda \`mysql\`, \`dns\` e \`smtp\` (além de \`http\` e \`tcp\`) e passou a ler o agente (\`agente_cliente\`) e derivar as métricas (\`derivadas\`, \`derivadas_db\`), tudo em um único lote para \`POST /api/ingest\`.
-  2. Novo \`Memoria\` guarda a leitura anterior do agente e do MySQL, e as leituras do banco dos últimos 10 min (as taxas e o \`db.crescimento_mb_dia\` precisam de duas leituras). Em \`--uma-vez\` não há leitura anterior, então só saem os valores instantâneos.
-  3. Novo \`dominio/derivadas_db.py\`: \`db.qps\`, \`db.rollbacks_s\`, \`db.conexoes_abortadas\`, \`db.slow_queries_min\`, \`db.conexoes\`, \`db.conexoes_executando\`, \`db.threads_cache\`, \`db.uso_conexoes_pct\`, \`db.tamanho_mb\`, \`db.crescimento_mb_dia\` (exige ≥ 60 s de histórico, comparando com a leitura mais antiga dos últimos 10 min, para o tamanho não oscilar por páginas de 16 KB).
-  4. \`config/servicos.toml\`: \`db\` = \`mysql\`, \`dns\` = \`dns\`, \`smtp\` = \`smtp\`; \`agente_url\` comentado até o agente (P1) estar no ar.
+  1. `coletor.py` ganhou os tipos de sonda `mysql`, `dns` e `smtp` (além de `http` e `tcp`) e passou a ler o agente (`agente_cliente`) e derivar as métricas (`derivadas`, `derivadas_db`), tudo em um único lote para `POST /api/ingest`.
+  2. Novo `Memoria` guarda a leitura anterior do agente e do MySQL, e as leituras do banco dos últimos 10 min (as taxas e o `db.crescimento_mb_dia` precisam de duas leituras). Em `--uma-vez` não há leitura anterior, então só saem os valores instantâneos.
+  3. Novo `dominio/derivadas_db.py`: `db.qps`, `db.rollbacks_s`, `db.conexoes_abortadas`, `db.slow_queries_min`, `db.conexoes`, `db.conexoes_executando`, `db.threads_cache`, `db.uso_conexoes_pct`, `db.tamanho_mb`, `db.crescimento_mb_dia` (exige ≥ 60 s de histórico, comparando com a leitura mais antiga dos últimos 10 min, para o tamanho não oscilar por páginas de 16 KB).
+  4. `config/servicos.toml`: `db` = `mysql`, `dns` = `dns`, `smtp` = `smtp`; `agente_url` comentado até o agente (P1) estar no ar.
 - **Por quê:** até aqui as sondas de banco, DNS e SMTP só viam a porta, e o agente não era lido.
-- **Arquivos:** \`plataforma/infra/coletor.py\`, \`plataforma/dominio/derivadas_db.py\`, \`config/servicos.toml\`, \`tests/test_coletor.py\`, \`tests/test_derivadas_db.py\`.
-- **Variáveis novas no \`.env\` (sem valor no repositório):** \`MONITOR_DB_SENHA\` (obrigatória para o tipo \`mysql\`), \`MONITOR_DB_USUARIO\` (padrão \`monitor\`), \`MONITOR_DNS_CONSULTA\` (padrão \`teste.lab.local\`), \`MONITOR_AGENTE_URL\` (ou \`agente_url\` no toml) e \`MONITOR_AGENTE_TOKEN\` (obrigatória quando o agente está configurado).
-- **Comportamento em falha:** agente fora do ar → mensagem em stderr e só as métricas do agente são omitidas; banco fora do ar → só \`db.disponivel\` e \`db.latencia_ms\`, e essa leitura não vira referência; senha ou token ausentes → erro explícito (não finge que o serviço caiu).
-- **Verificação:** \`pytest\` (cópia do repositório) → 68 passed, 1 skipped (dashboard, sem streamlit aqui), 3 de 3 vezes; \`tests/test_termometro.py\` continua verde. Ponta a ponta: API + Coletor reais contra web, DNS, SMTP e agente falsos, banco fora do ar → \`db\` CRITICO, os outros OK, \`host.cpu_pct\` e \`web.latencia_p95_ms\` gravados. Mutações no código (banco caído virando referência, falha da sonda DNS ignorada, janela de crescimento, leitura do agente não guardada, senha ausente aceita, exceção do agente, agente sem configuração, sonda errada por tipo, histórico mínimo, taxa por minuto) → todas acusadas.
-- **Pendências / riscos:** não testado contra MariaDB, Unbound e Postfix reais (rodar \`MONITOR_INFRA=1 pytest tests/test_infra.py\` e \`python -m plataforma.infra.coletor --uma-vez\` no WSL); porta e formato do agente a confirmar com P1; \`tests/test_infra.py\` não foi visto e pode ler \`servicos.toml\`.
-EOF
+- **Arquivos:** `plataforma/infra/coletor.py`, `plataforma/dominio/derivadas_db.py`, `config/servicos.toml`, `tests/test_coletor.py`, `tests/test_derivadas_db.py`.
+- **Variáveis novas no `.env` (sem valor no repositório):** `MONITOR_DB_SENHA` (obrigatória para o tipo `mysql`), `MONITOR_DB_USUARIO` (padrão `monitor`), `MONITOR_DNS_CONSULTA` (padrão `teste.lab.local`), `MONITOR_AGENTE_URL` (ou `agente_url` no toml) e `MONITOR_AGENTE_TOKEN` (obrigatória quando o agente está configurado).
+- **Comportamento em falha:** agente fora do ar → mensagem em stderr e só as métricas do agente são omitidas; banco fora do ar → só `db.disponivel` e `db.latencia_ms`, e essa leitura não vira referência; senha ou token ausentes → erro explícito (não finge que o serviço caiu).
+- **Verificação:** `pytest` (cópia do repositório) → 68 passed, 1 skipped (dashboard, sem streamlit aqui), 3 de 3 vezes; `tests/test_termometro.py` continua verde. Ponta a ponta: API + Coletor reais contra web, DNS, SMTP e agente falsos, banco fora do ar → `db` CRITICO, os outros OK, `host.cpu_pct` e `web.latencia_p95_ms` gravados. Mutações no código (banco caído virando referência, falha da sonda DNS ignorada, janela de crescimento, leitura do agente não guardada, senha ausente aceita, exceção do agente, agente sem configuração, sonda errada por tipo, histórico mínimo, taxa por minuto) → todas acusadas.
+- **Pendências / riscos:** não testado contra MariaDB, Unbound e Postfix reais (rodar `MONITOR_INFRA=1 pytest tests/test_infra.py` e `python -m plataforma.infra.coletor --uma-vez` no WSL); porta e formato do agente a confirmar com P1; `tests/test_infra.py` não foi visto e pode ler `servicos.toml`.
 
 ## 2026-11-21 19:00 — Regras de alerta de todas as métricas (P2, tarefa 5)
 - **Quem:** Luiz (P2)
@@ -267,5 +266,16 @@ EOF
 - **Pendências / riscos:**
   - Rodar `MONITOR_INFRA=1 pytest tests/test_infra.py` no WSL.
   - O monitoramento de **vulnerabilidade conhecida por serviço** (enunciado, seção 5) ainda não tem dono: falta combinar no grupo.
-
 - **Verificação no WSL (23/11 12:04):** `pytest` → 197 passed; `MONITOR_INFRA=1` → 16 passed, 1 failed: o teste do db chamava a sonda sem ler o `.env`. Correção: `config.carregar_env()` em `tests/test_infra.py`.
+
+## 2026-11-23 10:50 — Roteiro de testes T01 a T15 (P3, tarefa 3)
+- **Quem:** Yuri (P3)
+- **O que mudou:** `testes/roteiro.md` com os 15 casos de teste da plataforma, cada um com objetivo, requisito do enunciado, pré-condições, passos numerados (comandos exatos), resultado esperado, arquivo de evidência em `testes/evidencias/` e campo de passou/falhou; seções de ambiente (VM, 3 terminais, modo de e-mail, tempos das regras de alerta), de como registrar a evidência e tabela de resumo caso × requisito × dependência. `tests/test_roteiro.py` confere a estrutura.
+- **Por quê:** pedido P3, tarefa 3. A seção 13 da arquitetura citada no pedido não existe; os casos foram montados a partir da seção 6 do `CHECKLIST.md` e dos requisitos do enunciado (seções 2 a 5).
+- **Arquivos:** `testes/roteiro.md`, `tests/test_roteiro.py`, `docs/LOG.md`.
+- **Verificação:**
+  - Teste escrito antes: `pytest tests/test_roteiro.py` → 5 failed (arquivo ausente); depois do roteiro → 5 passed.
+  - Sabotagens acusadas: caso T07 removido, campo "Resultado esperado" trocado no T03, evidência do T12 sem arquivo, T15 fora da tabela de resumo, e (no arquivo real) campo "Requisito" do T12 renomeado.
+  - Tempos dos casos T06, T08 e T09 conferidos contra `plataforma/dominio/alertas.py` (disponibilidade: 1ª falha ATENÇÃO, 2ª CRÍTICO; demais sobem com 2; todas descem com 3, direto para o nível medido).
+  - `pytest` → 173 passed, 15 skipped (os pulados precisam de Docker/PHP: `MONITOR_INFRA=1`).
+- **Pendências / riscos:** revisão de P1 e P2 (critério "pronto quando" do pedido). T10, T12 e T13 dependem do agente e dos scripts de ataque (P1, ainda não estão no repositório). T08 usa `tc` na interface local: validar na VM se o atraso pega a porta publicada pelo Docker. T14: ferramenta e responsável pela "vulnerabilidade conhecida por serviço" a definir no grupo.
