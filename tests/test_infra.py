@@ -12,22 +12,28 @@ import json
 import os
 import secrets
 import shutil
+import smtplib
 import subprocess
+import sys
 import time
 from pathlib import Path
 
+import dns.resolver
 import pymysql
 import pytest
 import requests
 
 from plataforma.contrato import config
 from plataforma.infra.coletor import medir
+from tests.falsos.servicos_falsos import porta_livre
 
 pytestmark = pytest.mark.skipif(os.environ.get("MONITOR_INFRA") != "1",
                                 reason="defina MONITOR_INFRA=1 com os containers no ar")
 
 CONTAINERS = ["web", "db", "dns", "smtp"]
+config.carregar_env()   # o coletor le o .env ao iniciar; aqui o teste chama medir() direto
 RAIZ = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(RAIZ / "servicos" / "agente"))   # para importar agente_fontes
 
 
 @pytest.mark.parametrize("servico", config.servicos_monitorados(), ids=lambda s: s.nome)
@@ -125,3 +131,83 @@ def test_usuario_monitor_so_le():
                 cursor.execute("INSERT INTO favorites (user_id, recipe_url) VALUES (1, 'x')")
     finally:
         conexao.close()
+
+
+# ---------- DNS e SMTP (P1, tarefas 4 e 5) ----------
+
+def test_dns_resolve_a_zona_do_laboratorio():
+    resolvedor = dns.resolver.Resolver(configure=False)
+    resolvedor.nameservers, resolvedor.port, resolvedor.lifetime = ["127.0.0.1"], 1053, 3
+    assert resolvedor.resolve("teste.lab.local", "A")[0].to_text() == "192.0.2.10"
+    with pytest.raises(dns.resolver.NXDOMAIN):  # sabotagem embutida: nome que nao existe
+        resolvedor.resolve("nao-existe.lab.local", "A")
+
+
+@pytest.mark.skipif(shutil.which("docker") is None, reason="docker nao encontrado")
+def test_smtp_entrega_e_registra_no_log():
+    assert _docker("exec", "monitoramento-smtp-1", "postqueue", "-j") is not None  # comando da fila funciona
+    marca = f"teste-{secrets.token_hex(4)}@lab.local"
+    with smtplib.SMTP("127.0.0.1", 2525, timeout=10) as smtp:
+        smtp.sendmail("nao-responda@lab.local", [marca], f"Subject: teste\n\nteste {marca}")
+    for _ in range(10):
+        if any(marca in l and "status=sent" in l for l in _docker("logs", "monitoramento-smtp-1").splitlines()):
+            return
+        time.sleep(1)
+    pytest.fail("o envio nao apareceu com status=sent no log do Postfix")
+
+
+# ---------- agente (P1, tarefa 6) com os containers de verdade ----------
+
+@pytest.mark.skipif(shutil.which("docker") is None, reason="docker nao encontrado")
+def test_agente_le_os_containers_de_verdade(tmp_path):
+    porta, token = porta_livre(), secrets.token_hex(16)
+    processo = subprocess.Popen([sys.executable, str(RAIZ / "servicos" / "agente" / "agente.py"), "--porta", str(porta)],
+                                env={**os.environ, "MONITOR_AGENTE_TOKEN": token},
+                                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, encoding="utf-8")
+    url = f"http://127.0.0.1:{porta}/metrics"
+    try:
+        for _ in range(30):
+            try:
+                requests.get(url, timeout=1)
+                break
+            except requests.ConnectionError:
+                time.sleep(0.3)
+        requests.get(url, headers={"X-Token": token}, timeout=30)          # zera as janelas
+        requests.post(f"{SITE_URL}/login/login.php", data={"email": "ninguem@lab.local", "senha": "x"}, timeout=10)
+        dados = requests.get(url, headers={"X-Token": token}, timeout=30).json()
+    finally:
+        processo.terminate()
+        erros = processo.communicate(timeout=10)[1]
+
+    assert dados["apache"]["total_accesses"] is not None, f"apache sem dado: {erros}"
+    assert dados["log_web"]["total"] >= 1, "o log de acesso nao chegou no agente"
+    assert [t["usuario"] for t in dados["auth"]] == ["ninguem@lab.local"]
+    assert dados["unbound"]["total.num.queries"] is not None, f"unbound sem dado: {erros}"
+    assert isinstance(dados["postfix"]["fila"], int), f"fila sem dado: {erros}"
+    assert all(dados["containers"][n]["cpu_pct"] is not None for n in CONTAINERS), f"docker stats: {erros}"
+    assert all(h is not None for h in dados["hashes"].values()), f"hash sem dado: {erros}"
+
+
+@pytest.mark.skipif(shutil.which("docker") is None, reason="docker nao encontrado")
+def test_alterar_configuracao_muda_o_hash():
+    import agente_fontes as fontes
+    arquivos = {"monitoramento-smtp-1": ["/etc/postfix/main.cf"]}
+    original = fontes.hashes(fontes.executar, arquivos)["/etc/postfix/main.cf"]
+    _docker("exec", "monitoramento-smtp-1", "sh", "-c", "echo '# alteracao de teste' >> /etc/postfix/main.cf")
+    try:
+        alterado = fontes.hashes(fontes.executar, arquivos)["/etc/postfix/main.cf"]
+    finally:
+        _docker("exec", "monitoramento-smtp-1", "sed", "-i", "$d", "/etc/postfix/main.cf")   # desfaz
+    assert alterado != original
+    assert fontes.hashes(fontes.executar, arquivos)["/etc/postfix/main.cf"] == original, "a restauracao falhou"
+
+
+# ---------- isolamento (P1, tarefa 7; regra da professora) ----------
+
+def test_ataque_ao_web_nao_derruba_os_outros():
+    """15 s de DDoS no web; db, dns e smtp tem que responder em 95% das sondas."""
+    sys.path.insert(0, str(RAIZ / "testes"))
+    import teste_isolamento
+    relatorio = teste_isolamento.testar(segundos=15, conexoes=30)
+    assert relatorio["ataque_web"]["requisicoes"] > 0, "o ataque nem chegou no web"
+    assert relatorio["aprovado"], f"um servico caiu durante o ataque ao web: {relatorio['servicos']}"

@@ -19,7 +19,7 @@ services:
       LOGIN_LOG: /var/log/app/login.log
     volumes:
       - "./web-vuln/site:/var/www/html/receitas_práticas:ro"
-      - "web_logs:/var/log/app"        # log de login; o agente vai ler deste volume
+      - "./logs/web:/var/log/app"      # login.log e acesso.log; o agente le desta pasta
     depends_on: [db, smtp]
     cpus: 1.0
     mem_limit: 512m
@@ -61,4 +61,3 @@ services:
 
 volumes:
   db_dados:
-  web_logs:
