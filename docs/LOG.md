@@ -279,3 +279,22 @@ Modelo de entrada:
   - Tempos dos casos T06, T08 e T09 conferidos contra `plataforma/dominio/alertas.py` (disponibilidade: 1ª falha ATENÇÃO, 2ª CRÍTICO; demais sobem com 2; todas descem com 3, direto para o nível medido).
   - `pytest` → 173 passed, 15 skipped (os pulados precisam de Docker/PHP: `MONITOR_INFRA=1`).
 - **Pendências / riscos:** revisão de P1 e P2 (critério "pronto quando" do pedido). T10, T12 e T13 dependem do agente e dos scripts de ataque (P1, ainda não estão no repositório). T08 usa `tc` na interface local: validar na VM se o atraso pega a porta publicada pelo Docker. T14: ferramenta e responsável pela "vulnerabilidade conhecida por serviço" a definir no grupo.
+
+## 2026-11-23 09:14 — Dashboard completo: páginas por serviço, alertas e segurança (P3, tarefas 1 e 2)
+- **Quem:** Yuri (P3)
+- **O que mudou:**
+  1. `plataforma/dashboard/app.py` com 4 páginas (seletor no topo): **Visão geral** (um cartão por serviço com a cor do nível e os 5 últimos alertas), **Por serviço** (todas as métricas do catálogo do serviço, com unidade, cor, valor atual, gráfico da última hora e, na ajuda ⓘ, a descrição e os limites do `regras.toml`), **Alertas** (`GET /api/alertas`: contagens e tabela com de/para, valor, limite e e-mail enviado) e **Segurança** (`GET /api/seguranca`: contagem por tipo, tabela de eventos e linha de base dos arquivos).
+  2. Cores: 🟢 OK, 🟡 ATENCAO, 🔴 CRITICO, ⚪ sem dados, 🔵 métrica informativa (sem regra). O nível de cada métrica é o `nivel_novo` do alerta mais novo dela (o mesmo estado com histerese da API); métrica sem dados nunca aparece como OK.
+  3. Serviço `HOST` previsto (aparece na visão geral quando o agente manda `host.*`, como pedido no LOG de 21/11).
+  4. API fora do ar (ou resposta que não é JSON) vira mensagem "API indisponível" em cada página, sem quebrar a tela.
+  5. Responsividade: cartões em linhas de 3 colunas (`st.columns`), que o Streamlit empilha sozinho em telas estreitas; conferido a 1366 px e a 390 px.
+  6. Novo `plataforma/dashboard/formatos.py`: funções puras (nível de cada métrica, valor com unidade no padrão brasileiro, texto dos limites, horário legível), testáveis sem o Streamlit.
+  7. `CHECKLIST.md`: marcados os dois itens de front-end (por serviço e visão consolidada).
+- **Por quê:** pedido P3, tarefas 1 e 2; a visão geral continua com exatamente os 4 cartões de serviço, então o `test_termometro.py` não precisou mudar.
+- **Arquivos:** `plataforma/dashboard/app.py`, `plataforma/dashboard/formatos.py`, `tests/test_dashboard.py`, `tests/test_dashboard_formatos.py`, `CHECKLIST.md`, `docs/LOG.md`.
+- **Verificação:**
+  - Testes escritos antes: `pytest tests/test_dashboard.py tests/test_dashboard_formatos.py` → erro de import e 15 failed; depois da implementação → 32 passed. O teste do dashboard usa `AppTest` contra a API real (`criar_app` numa thread com banco temporário, dados enviados pelas mesmas rotas do Coletor).
+  - 11 sabotagens no código, todas acusadas: métrica sem dados virando OK, alerta antigo sobrescrevendo o novo, rótulo sem unidade, API fora do ar sem tratamento, página com só 3 métricas, e-mail sempre "não enviado", CRÍTICO com cor verde, evento sem origem, valor sem unidade, HOST escondido, linha de base escondida.
+  - `pytest` → 200 passed, 15 skipped (os 15 precisam de Docker/PHP: `MONITOR_INFRA=1`). Camadas: o dashboard só importa `contrato` e o próprio `formatos`.
+  - Tela conferida com API + dashboard reais e 1 h de dados de demonstração, a 1366 px (PC) e 390 px (celular).
+- **Pendências / riscos:** prints definitivos no PC e no celular (tarefa 2) saem na VM, com os serviços reais (tarefa 4). Os limites mostrados na ajuda vêm do `config/regras.toml` local do dashboard (é configuração, não dado; os dados continuam vindo só da API).
