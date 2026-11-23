@@ -15,9 +15,9 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 - [x] Regras de alerta — `plataforma/dominio/alertas.py`, `config/regras.toml`
 - [x] Canal de notificação por **e-mail** — `plataforma/infra/notificador.py`
 - [x] Documentação: **arquitetura** — `docs/arquitetura.md`
-- [ ] Documentação: **runbooks** — `docs/runbooks/`
+- [x] Documentação: **runbooks** — `docs/runbooks/`
 - [x] Documentação: **playbooks de incidentes** — `docs/playbooks/`
-- [ ] Documentação: **guia de instalação** — `docs/guia-instalacao.md`
+- [x] Documentação: **guia de instalação** — `docs/guia-instalacao.md`
 - [ ] **Testes** de navegação e uso da plataforma — `testes/`
 - [ ] Documento final em **PDF (ABNT)** — `relatorio/`
 - [ ] Apresentação do dashboard em sala
@@ -26,10 +26,10 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 - [ ] Plataforma em **VM própria** (VM-P); serviços em **containers isolados** na VM-S — `docs/arquitetura.md`
 - [x] Coleta por **telemetria**: plataforma → serviços — `plataforma/infra/coletor.py`
-- [ ] Banco de dados: MySQL, SQLite ou PostgreSQL — `servicos/banco/`
-- [ ] Aplicação **web vulnerável em PHP** (site Receitas Práticas) — `servicos/web-vuln/`
-- [ ] DNS com **Unbound ou BIND** — `servicos/dns/`
-- [ ] SMTP com **Postfix** — `servicos/smtp/`
+- [x] Banco de dados: MySQL, SQLite ou PostgreSQL — `servicos/banco/`
+- [x] Aplicação **web vulnerável em PHP** (site Receitas Práticas) — `servicos/web-vuln/`
+- [x] DNS com **Unbound ou BIND** — `servicos/dns/`
+- [x] SMTP com **Postfix** — `servicos/smtp/`
 - [x] **Arquitetura** bem documentada (ênfase da professora) — `docs/arquitetura.md`
 - [ ] **URL do repositório Git** incluída no documento — `relatorio/`
 
