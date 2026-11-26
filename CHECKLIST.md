@@ -18,8 +18,8 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 - [x] Documentação: **runbooks** — `docs/runbooks/`
 - [x] Documentação: **playbooks de incidentes** — `docs/playbooks/`
 - [x] Documentação: **guia de instalação** — `docs/guia-instalacao.md`
-- [ ] **Testes** de navegação e uso da plataforma — `testes/`
-- [ ] Documento final em **PDF (ABNT)** — `relatorio/`
+- [x] **Testes** de navegação e uso da plataforma — `testes/`
+- [x] Documento final em **PDF (ABNT)** — `relatorio/`
 - [ ] Apresentação do dashboard em sala
 
 ## 2. Requisitos passados em sala (quadro)
@@ -31,7 +31,7 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 - [x] DNS com **Unbound ou BIND** — `servicos/dns/`
 - [x] SMTP com **Postfix** — `servicos/smtp/`
 - [x] **Arquitetura** bem documentada (ênfase da professora) — `docs/arquitetura.md`
-- [ ] **URL do repositório Git** incluída no documento — `relatorio/`
+- [x] **URL do repositório Git** incluída no documento — `relatorio/`
 
 ## 3. Métricas por serviço (enunciado, seção 3)
 
@@ -80,34 +80,34 @@ Legenda: `[ ]` pendente · `[x]` entregue · `(?)` aguardando confirmação da p
 
 ## 6. Testes (evidências para o documento)
 
-- [ ] Navegação pelo dashboard (consolidado + cada serviço), em PC e celular
-- [ ] Simulação de falha de cada serviço → alerta vermelho + e-mail recebido
-- [ ] Simulação de degradação → alerta amarelo + e-mail recebido
-- [ ] Simulação de pico de tráfego → detecção de anomalia
-- [ ] Simulação de brute-force → detecção de falhas de autenticação
-- [ ] Alteração de arquivo de configuração → alerta disparado
-- [ ] Varredura de vulnerabilidades executada e registrada
-- [ ] Prints legíveis, com destaque no que interessa
+- [ ] Navegação pelo dashboard (consolidado + cada serviço), em PC e celular — feito só no PC (T02 a T04); celular não testado
+- [x] Simulação de falha de cada serviço → alerta vermelho + e-mail recebido
+- [x] Simulação de degradação → alerta amarelo + e-mail recebido
+- [x] Simulação de pico de tráfego → detecção de anomalia
+- [x] Simulação de brute-force → detecção de falhas de autenticação
+- [x] Alteração de arquivo de configuração → alerta disparado
+- [x] Varredura de vulnerabilidades executada e registrada
+- [x] Prints legíveis, com destaque no que interessa
 
 ## 7. Documento ABNT
 
 Normas: NBR 14724:2024 (estrutura), NBR 6023:2018 (referências), NBR 10520:2023 (citações).
 
-- [ ] Capa
-- [ ] Folha de rosto
-- [ ] Resumo e palavras-chave
-- [ ] Listas de ilustrações e de abreviaturas/siglas
-- [ ] Sumário
-- [ ] Introdução (contexto, objetivos, justificativa)
-- [ ] Referencial teórico (monitoramento, quatro sinais de ouro, protocolos HTTP/DNS/SMTP, resposta a incidentes)
-- [ ] Arquitetura da solução (diagrama + explicação)
-- [ ] Implementação (cada componente)
-- [ ] Testes e resultados
-- [ ] Conclusão
-- [ ] Referências (NBR 6023)
-- [ ] Apêndices (runbooks, playbooks, guia de instalação)
-- [ ] URL do repositório Git
-- [ ] Formatação conferida contra a NBR 14724:2024 (fonte, margens, espaçamento, paginação)
+- [x] Capa
+- [x] Folha de rosto
+- [x] Resumo e palavras-chave
+- [x] Listas de ilustrações e de abreviaturas/siglas
+- [x] Sumário
+- [x] Introdução (contexto, objetivos, justificativa)
+- [x] Referencial teórico (monitoramento, quatro sinais de ouro, protocolos HTTP/DNS/SMTP, resposta a incidentes)
+- [x] Arquitetura da solução (diagrama + explicação)
+- [x] Implementação (cada componente)
+- [x] Testes e resultados
+- [x] Conclusão
+- [x] Referências (NBR 6023)
+- [x] Apêndices (runbooks, playbooks, guia de instalação)
+- [x] URL do repositório Git
+- [x] Formatação conferida contra a NBR 14724:2024 (fonte, margens, espaçamento, paginação)
 
 ## 8. Segurança do próprio repositório
 

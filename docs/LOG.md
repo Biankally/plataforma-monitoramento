@@ -368,3 +368,14 @@ Modelo de entrada:
   - Varredura: nenhum `.env`, banco ou chave rastreados; nenhum e-mail real fora da `vendor/`.
 - **Pendências / riscos:** repetir o ensaio no WSL com os containers de verdade (`docs/runbooks/ataques.md`); avisar a professora que o alvo é o site do grupo, e não a DVWA (CHECKLIST, seção 10).
 
+## 2026-11-25 22:11 — Relatório final ABNT e evidências do roteiro (P3, tarefas 4 a 6)
+- **Quem:** Yuri (P3)
+- **O que mudou:**
+  1. `relatorio/Relatorio-Plataforma-Monitoramento.pdf`: documento final em PDF (ABNT), com 38 páginas. Junto vai o `.docx` editável, de onde o PDF é exportado.
+  2. `testes/evidencias/`: 28 prints dos casos do roteiro, tirados no PC com a plataforma rodando na VM Ubuntu. Os prints de T10, T12, T13, T14 e T15 foram renomeados para os nomes do roteiro (`T10-evento`, `T12-critico`, `T12-email`, `T13-evento`, `T14-evento`, `T15-api`).
+  3. `CHECKLIST.md`: marcados o PDF, a URL do repositório no documento, os itens de testes (seção 6) e os itens do documento ABNT (seção 7). A navegação no celular ficou desmarcada, com nota.
+- **Por quê:** pedido P3, tarefas 4 a 6; o README reserva `relatorio/` para o documento final.
+- **Arquivos:** `relatorio/`, `testes/evidencias/`, `CHECKLIST.md`, `docs/LOG.md`.
+- **Verificação:**
+  - Casos T01 a T04 e T06 a T15 executados na VM, todos com resultado "passou" e print correspondente no relatório (Figuras 2 a 17).
+  - URL do repositório conferida no PDF (seções de introdução e conclusão).
